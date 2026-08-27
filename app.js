@@ -1,0 +1,453 @@
+const tg = window.Telegram.WebApp;
+tg.expand();
+tg.ready();
+
+// UI Elements (Headers & Containers)
+const loader = document.getElementById('loader');
+const mainHeader = document.getElementById('main-header');
+const userNameEl = document.getElementById('user-name');
+const userAvatarEl = document.getElementById('user-avatar');
+const roleBadgeEl = document.getElementById('role-badge');
+const tabsContainer = document.getElementById('tabs-container');
+const bottomNav = document.getElementById('bottom-nav');
+
+// Core Role Views (Inside Home Tab)
+const adminView = document.getElementById('admin-view');
+const dispatcherView = document.getElementById('dispatcher-view');
+const driverView = document.getElementById('driver-view');
+const clientView = document.getElementById('client-view');
+
+let currentActiveRole = 'client'; // To know which orders to render in Rides Tab
+
+// Telegram Identification
+const telegramId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 123456789;
+const firstName = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : 'Тест';
+
+userNameEl.textContent = firstName;
+const bgColor = tg.themeParams.button_color ? tg.themeParams.button_color.replace('#', '') : 'f4c01e';
+userAvatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName)}&background=${bgColor}&color=fff&bold=true`;
+
+// Let's implement Bottom Navigation Logic first
+const navItems = document.querySelectorAll('.nav-item');
+const tabContents = document.querySelectorAll('.tab-content');
+
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        // Haptic 
+        if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+
+        // Remove active class from all iterems
+        navItems.forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+
+        // Hide all tabs
+        tabContents.forEach(tab => tab.classList.add('hidden'));
+
+        // Show target tab
+        const targetId = item.getAttribute('data-tab');
+        document.getElementById(targetId).classList.remove('hidden');
+    });
+});
+
+// Fetch Data
+async function initApp() {
+    try {
+        const urlParams = window.location.search;
+        const response = await fetch(`http://127.0.0.1:8000/api/user/${telegramId}${urlParams}`);
+        const data = await response.json();
+
+        loader.classList.add('hidden');
+        mainHeader.classList.remove('hidden');
+        tabsContainer.classList.remove('hidden');
+        bottomNav.classList.remove('hidden'); // Show bottom navigation natively!
+
+        const role = data.role;
+        currentActiveRole = role;
+        roleBadgeEl.textContent = getRoleName(role);
+
+        // Hide "Become Driver" button if user is already a driver or higher
+        if (role !== 'client') {
+            const btnBecomeDriver = document.getElementById('btn-become-driver');
+            if (btnBecomeDriver) btnBecomeDriver.classList.add('hidden');
+        }
+
+        if (role === 'admin') {
+            adminView.classList.remove('hidden');
+            dispatcherView.classList.remove('hidden');
+            driverView.classList.remove('hidden');
+
+            document.getElementById('stat-users').textContent = data.stats ? data.stats.users : 0;
+            document.getElementById('stat-drivers').textContent = data.stats ? data.stats.drivers : 0;
+            document.getElementById('stat-transfers').textContent = data.stats ? data.stats.transfers : 0;
+
+            renderAdminDrivers();
+            renderOrders(data.new_orders, 'dispatcher-orders');
+            renderOrders(data.active_orders, 'active-orders-container');
+
+        } else if (role === 'dispatcher') {
+            dispatcherView.classList.remove('hidden');
+            renderOrders(data.new_orders, 'dispatcher-orders');
+
+            // Populate rides tab with active fleet rides (mocking with new orders for visual)
+            renderOrders(data.new_orders, 'active-orders-container');
+
+        } else if (role === 'driver') {
+            driverView.classList.remove('hidden');
+            document.getElementById('balance').textContent = '12 500 ₸';
+            setupDriverWithdraw();
+
+            // Show driver statistical blocks in Rides tab
+            const statsContainer = document.getElementById('driver-stats-container');
+            if (statsContainer) statsContainer.classList.remove('hidden');
+
+            // Populate BOTH the inner module and the central Rides Tab
+            renderOrders(data.active_orders, 'active-orders-container');
+
+        } else {
+            // Client
+            clientView.classList.remove('hidden');
+            renderOrders(data.active_orders, 'active-orders-container'); // Move to rides tab
+        }
+    } catch (error) {
+        // Fallback Client Mock
+        loader.classList.add('hidden');
+        mainHeader.classList.remove('hidden');
+        tabsContainer.classList.remove('hidden');
+        bottomNav.classList.remove('hidden');
+        roleBadgeEl.textContent = 'Клиент (Демо)';
+        clientView.classList.remove('hidden');
+        renderOrders([
+            { id: 792, from_address: 'ТЦ Хан Шатыр', to_address: 'Дом', date: 'Завтра', time: '18:00', status: 'Создан' }
+        ], 'active-orders-container');
+    }
+}
+
+function getRoleName(role) {
+    if (role === 'admin') return 'Администратор';
+    if (role === 'dispatcher') return 'Диспетчер Парка';
+    if (role === 'driver') return 'Водитель (MAX FLEET)';
+    return 'Клиент';
+}
+
+function renderOrders(orders, containerId) {
+    const container = document.getElementById(containerId);
+    if (!orders || orders.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Здесь пока пусто. Активных поездок нет.</div>';
+        return;
+    }
+
+    let html = '';
+    orders.forEach(o => {
+        html += `
+            <div class="order-card">
+                <h4>Заказ #${o.id}</h4>
+                <p>📍 ${o.from_address} ➡️ ${o.to_address}</p>
+                <p>🕒 ${o.date} ${o.time} | 🏷 ${o.status}</p>
+                ${currentActiveRole === 'client' ? `<button class="repeat-order-btn" onclick="repeatOrder(${o.id}, '${o.from_address}', '${o.to_address}')">Повторить</button>` : ''}
+                ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function repeatOrder(id, from, to) {
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    const tabHome = document.querySelector('[data-tab="tab-home"]');
+    if (tabHome) tabHome.click();
+
+    // Fill the addresses
+    const pickup = document.getElementById('client-pickup');
+    const dropoff = document.getElementById('client-dropoff');
+
+    if (pickup && dropoff) {
+        pickup.value = from;
+        dropoff.value = to;
+        pickup.dispatchEvent(new Event('input'));
+    }
+}
+
+// --- DISPATCHER LOGIC ---
+let activeAssignOrderId = null;
+let selectedDriverId = null;
+
+const mockDrivers = [
+    { id: 101, name: 'Алибек С.', car: 'Toyota Camry 70', num: '01 123 ABC' },
+    { id: 102, name: 'Тимур Ж.', car: 'Hyundai Elantra', num: '02 456 DEF' },
+    { id: 103, name: 'Еркебулан К.', car: 'Kia K5', num: '01 789 GHI' }
+];
+
+function openAssignModal(orderId) {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    activeAssignOrderId = orderId;
+    selectedDriverId = null;
+
+    // Fill driver list
+    const container = document.getElementById('driver-list-container');
+    let html = '';
+    mockDrivers.forEach(d => {
+        html += `
+            <div class="driver-list-item" onclick="selectDriverForAssign(this, ${d.id})" id="drv-item-${d.id}">
+                <div>
+                    <h4 style="font-size:13px; margin-bottom:2px;">${d.name}</h4>
+                    <p style="font-size:11px; color:var(--hint-color);">${d.car} • <b>${d.num}</b></p>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+
+    document.getElementById('assign-driver-modal').classList.remove('hidden');
+    document.getElementById('confirm-assign-btn').disabled = true;
+}
+
+function selectDriverForAssign(el, driverId) {
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    selectedDriverId = driverId;
+    document.querySelectorAll('.driver-list-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('confirm-assign-btn').disabled = false;
+}
+
+function closeAssignModal() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    document.getElementById('assign-driver-modal').classList.add('hidden');
+    activeAssignOrderId = null;
+    selectedDriverId = null;
+}
+
+function confirmAssignDriver() {
+    if (!selectedDriverId || !activeAssignOrderId) return;
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+    closeAssignModal();
+    tg.sendData(JSON.stringify({
+        action: 'assign_driver',
+        order_id: activeAssignOrderId,
+        driver_id: selectedDriverId
+    }));
+    tg.showAlert('Водитель успешно назначен на рейс!');
+}
+
+function setupDriverWithdraw() {
+    const input = document.getElementById('withdraw-amount');
+    const btn = document.getElementById('withdraw-btn');
+    if (!input || !btn) return;
+
+    input.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        if (val > 0 && val <= 12500) {
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
+        }
+    });
+
+    btn.addEventListener('click', () => {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        tg.showConfirm(`Вывести ${input.value} ₸?`, (ok) => {
+            if (ok) tg.sendData(JSON.stringify({ action: 'withdraw', amount: input.value }));
+        });
+    });
+}
+
+// --- CLIENT UI LOGIC ---
+const clientPickup = document.getElementById('client-pickup');
+const clientDropoff = document.getElementById('client-dropoff');
+const clientOrderBtn = document.getElementById('client-order-btn');
+const carCards = document.querySelectorAll('.car-card');
+const clientComment = document.getElementById('client-comment');
+const clientDate = document.getElementById('client-date');
+const clientTime = document.getElementById('client-time');
+const clientFrequency = document.getElementById('client-frequency');
+const clientRentType = document.getElementById('client-rent-type');
+const clientPassengers = document.getElementById('client-passengers');
+const clientReturnCheck = document.getElementById('client-return-check');
+const clientReturnDate = document.getElementById('client-return-date');
+const clientReturnTime = document.getElementById('client-return-time');
+const clientDuration = document.getElementById('client-duration');
+
+// UI Blocks
+const wrapDropoff = document.getElementById('wrap-dropoff');
+const blockFrequency = document.getElementById('block-frequency');
+const blockDays = document.getElementById('block-days');
+const blockReturn = document.getElementById('block-return');
+const returnParams = document.getElementById('return-params');
+const wrapPassengers = document.getElementById('wrap-passengers');
+const wrapDuration = document.getElementById('wrap-duration');
+const addressLine = document.getElementById('address-line');
+
+let clientSelectedClass = 'standart';
+
+if (clientPickup) {
+    if (clientDate) clientDate.valueAsDate = new Date();
+
+    // Rent Type logic
+    clientRentType.addEventListener('change', (e) => {
+        if (e.target.value === 'hourly') {
+            wrapDropoff.classList.add('hidden');
+            addressLine.classList.add('hidden');
+            blockFrequency.classList.add('hidden');
+            blockDays.classList.add('hidden');
+            blockReturn.classList.add('hidden');
+            wrapPassengers.classList.add('hidden');
+            wrapDuration.classList.remove('hidden');
+            clientPickup.placeholder = 'Место подачи (адрес)';
+        } else {
+            wrapDropoff.classList.remove('hidden');
+            addressLine.classList.remove('hidden');
+            blockFrequency.classList.remove('hidden');
+            blockReturn.classList.remove('hidden');
+            wrapPassengers.classList.remove('hidden');
+            wrapDuration.classList.add('hidden');
+            clientPickup.placeholder = 'Откуда поедем?';
+            clientFrequency.dispatchEvent(new Event('change'));
+        }
+        validateClientOrder();
+    });
+
+    // Frequency Logic
+    clientFrequency.addEventListener('change', (e) => {
+        if (e.target.value === 'schedule') {
+            blockDays.classList.remove('hidden');
+        } else {
+            blockDays.classList.add('hidden');
+        }
+    });
+
+    // Return trip logic
+    clientReturnCheck.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            returnParams.classList.remove('hidden');
+        } else {
+            returnParams.classList.add('hidden');
+        }
+    });
+
+    function validateClientOrder() {
+        let isValid = clientPickup.value.trim() !== '';
+
+        if (clientRentType.value === 'transfer') {
+            if (clientDropoff.value.trim() === '') isValid = false;
+        }
+
+        if (isValid) {
+            clientOrderBtn.disabled = false;
+        } else {
+            clientOrderBtn.disabled = true;
+        }
+    }
+
+    clientPickup.addEventListener('input', validateClientOrder);
+    if (clientDropoff) clientDropoff.addEventListener('input', validateClientOrder);
+
+    carCards.forEach(card => {
+        card.addEventListener('click', () => {
+            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            carCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            clientSelectedClass = card.getAttribute('data-class');
+        });
+    });
+
+    clientOrderBtn.addEventListener('click', () => {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+        // Collect selected days if schedule
+        let scheduleDays = [];
+        if (clientFrequency.value === 'schedule' && clientRentType.value === 'transfer') {
+            document.querySelectorAll('.day-check:checked').forEach(el => scheduleDays.push(el.value));
+        }
+
+        tg.sendData(JSON.stringify({
+            action: 'client_order',
+            rent_type: clientRentType.value,
+            pickup: clientPickup.value.trim(),
+            dropoff: clientRentType.value === 'transfer' ? clientDropoff.value.trim() : '',
+            date: clientDate.value,
+            time: clientTime ? clientTime.value : '',
+            frequency: clientRentType.value === 'transfer' ? clientFrequency.value : 'once',
+            schedule_days: scheduleDays.join(','),
+            return_trip: clientReturnCheck.checked ? '1' : '0',
+            return_date: clientReturnCheck.checked ? clientReturnDate.value : '',
+            return_time: clientReturnCheck.checked ? clientReturnTime.value : '',
+            duration_hours: clientRentType.value === 'hourly' ? clientDuration.value : 0,
+            passengers: clientRentType.value === 'transfer' ? clientPassengers.value : 0,
+            carClass: clientSelectedClass,
+            comment: clientComment.value.trim()
+        }));
+    });
+}
+
+// --- YANDEX SYNC LOGIC ---
+const syncStep1 = document.getElementById('driver-sync-step-1');
+const syncStep2 = document.getElementById('driver-sync-step-2');
+const syncStep3 = document.getElementById('driver-sync-step-3');
+const syncBtnCheck = document.getElementById('sync-btn-check');
+const syncPhone = document.getElementById('sync-phone');
+
+if (syncBtnCheck) {
+    syncBtnCheck.addEventListener('click', () => {
+        if (syncPhone.value.trim().length >= 10) {
+            syncStep1.classList.add('hidden');
+            syncStep2.classList.remove('hidden');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            // Mock API Sync delay
+            setTimeout(() => {
+                syncStep2.classList.add('hidden');
+                syncStep3.classList.remove('hidden');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+                tg.sendData(JSON.stringify({
+                    action: 'yandex_sync',
+                    phone: syncPhone.value.trim()
+                }));
+            }, 3000); // 3 seconds fake sync
+
+        } else {
+            tg.showAlert('Пожалуйста, введите корректный номер телефона.');
+        }
+    });
+}
+
+// Kickstart
+initApp();
+
+
+// --- ADMIN LOGIC ---
+function renderAdminDrivers() {
+    const container = document.getElementById('admin-drivers-list');
+    if (!container) return;
+
+    let html = '';
+    mockDrivers.forEach(d => {
+        const isAllowed = d.id !== 102; // Just a mock condition, 102 is blocked
+        const toggleColor = isAllowed ? '#4CAF50' : 'var(--hint-color)';
+        const btnText = isAllowed ? 'Отстранить' : 'Допустить';
+        const statusText = isAllowed ? 'Допущен к трансферам' : 'Не допущен';
+
+        html += `
+            <div class="glass-card" style="margin-bottom:10px; padding:15px; border-left: 4px solid ${toggleColor};">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h4 style="font-size:15px; margin-bottom:5px;">${d.name}</h4>
+                        <p style="font-size:12px; color:var(--hint-color); margin-bottom:2px;">${d.car} • ${d.num}</p>
+                        <p style="font-size:11px; color:${toggleColor}; font-weight:600;">${statusText}</p>
+                    </div>
+                    <button class="primary-btn alt-btn" style="width:auto; padding:8px 12px; font-size:11px;" onclick="toggleDriverAccess(${d.id})">${btnText}</button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function toggleDriverAccess(driverId) {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    tg.showAlert('Статус водителя (допуск к трансферам) успешно изменён!');
+    tg.sendData(JSON.stringify({
+        action: 'toggle_driver_access',
+        driver_id: driverId
+    }));
+}
