@@ -53,7 +53,11 @@ navItems.forEach(item => {
 async function initApp() {
     try {
         const urlParams = window.location.search;
-        const response = await fetch(`https://swimsuit-sheath-viewless.ngrok-free.dev/api/user/${telegramId}${urlParams}`);
+        const response = await fetch(`https://swimsuit-sheath-viewless.ngrok-free.dev/api/user/${telegramId}${urlParams}`, {
+            headers: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
         const data = await response.json();
 
         loader.classList.add('hidden');
