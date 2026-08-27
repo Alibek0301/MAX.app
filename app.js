@@ -71,6 +71,9 @@ async function initApp() {
             if (btnBecomeDriver) btnBecomeDriver.classList.add('hidden');
         }
 
+        // Save globally to use in assigning/admin UI
+        window.fleetDrivers = data.drivers || [];
+
         if (role === 'admin') {
             adminView.classList.remove('hidden');
             dispatcherView.classList.remove('hidden');
@@ -171,12 +174,6 @@ function repeatOrder(id, from, to) {
 let activeAssignOrderId = null;
 let selectedDriverId = null;
 
-const mockDrivers = [
-    { id: 101, name: 'Алибек С.', car: 'Toyota Camry 70', num: '01 123 ABC' },
-    { id: 102, name: 'Тимур Ж.', car: 'Hyundai Elantra', num: '02 456 DEF' },
-    { id: 103, name: 'Еркебулан К.', car: 'Kia K5', num: '01 789 GHI' }
-];
-
 function openAssignModal(orderId) {
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     activeAssignOrderId = orderId;
@@ -185,17 +182,25 @@ function openAssignModal(orderId) {
     // Fill driver list
     const container = document.getElementById('driver-list-container');
     let html = '';
-    mockDrivers.forEach(d => {
-        html += `
-            <div class="driver-list-item" onclick="selectDriverForAssign(this, ${d.id})" id="drv-item-${d.id}">
-                <div>
-                    <h4 style="font-size:13px; margin-bottom:2px;">${d.name}</h4>
-                    <p style="font-size:11px; color:var(--hint-color);">${d.car} • <b>${d.num}</b></p>
+    const drivers = window.fleetDrivers || [];
+
+    if (drivers.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Нет доступных водителей</div>';
+    } else {
+        drivers.forEach(d => {
+            const driverName = d.driver_name || d.first_name || 'Водитель';
+            const carInfo = d.car_brand ? `${d.car_brand} • <b>${d.car_number || ''}</b>` : 'Нет авто';
+            html += `
+                <div class="driver-list-item" onclick="selectDriverForAssign(this, ${d.telegram_id})" id="drv-item-${d.telegram_id}">
+                    <div>
+                        <h4 style="font-size:13px; margin-bottom:2px;">${driverName}</h4>
+                        <p style="font-size:11px; color:var(--hint-color);">${carInfo}</p>
+                    </div>
                 </div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
+            `;
+        });
+        container.innerHTML = html;
+    }
 
     document.getElementById('assign-driver-modal').classList.remove('hidden');
     document.getElementById('confirm-assign-btn').disabled = true;
@@ -421,21 +426,30 @@ function renderAdminDrivers() {
     if (!container) return;
 
     let html = '';
-    mockDrivers.forEach(d => {
-        const isAllowed = d.id !== 102; // Just a mock condition, 102 is blocked
+    const drivers = window.fleetDrivers || [];
+
+    if (drivers.length === 0) {
+        container.innerHTML = '<div class="empty-msg">Нет водителей в базе</div>';
+        return;
+    }
+
+    drivers.forEach(d => {
+        const isAllowed = true; // In the future, check real status
         const toggleColor = isAllowed ? '#4CAF50' : 'var(--hint-color)';
         const btnText = isAllowed ? 'Отстранить' : 'Допустить';
         const statusText = isAllowed ? 'Допущен к трансферам' : 'Не допущен';
+        const driverName = d.driver_name || d.first_name || 'Водитель';
+        const carInfo = d.car_brand ? `${d.car_brand} • ${d.car_number || ''}` : 'Нет авто';
 
         html += `
             <div class="glass-card" style="margin-bottom:10px; padding:15px; border-left: 4px solid ${toggleColor};">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div>
-                        <h4 style="font-size:15px; margin-bottom:5px;">${d.name}</h4>
-                        <p style="font-size:12px; color:var(--hint-color); margin-bottom:2px;">${d.car} • ${d.num}</p>
+                        <h4 style="font-size:15px; margin-bottom:5px;">${driverName}</h4>
+                        <p style="font-size:12px; color:var(--hint-color); margin-bottom:2px;">${carInfo}</p>
                         <p style="font-size:11px; color:${toggleColor}; font-weight:600;">${statusText}</p>
                     </div>
-                    <button class="primary-btn alt-btn" style="width:auto; padding:8px 12px; font-size:11px;" onclick="toggleDriverAccess(${d.id})">${btnText}</button>
+                    <button class="primary-btn alt-btn" style="width:auto; padding:8px 12px; font-size:11px;" onclick="toggleDriverAccess(${d.telegram_id})">${btnText}</button>
                 </div>
             </div>
         `;
