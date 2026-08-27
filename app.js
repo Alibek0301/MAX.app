@@ -19,9 +19,13 @@ const clientView = document.getElementById('client-view');
 
 let currentActiveRole = 'client'; // To know which orders to render in Rides Tab
 
-// Telegram Identification
-const telegramId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 123456789;
-const firstName = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : 'Тест';
+// Telegram Identification — priority: URL param > initDataUnsafe > test
+const urlSearchParams = new URLSearchParams(window.location.search);
+const uidFromUrl = urlSearchParams.get('uid');
+const telegramId = uidFromUrl
+    ? parseInt(uidFromUrl)
+    : ((tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 123456789);
+const firstName = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : (uidFromUrl ? 'Пользователь' : 'Тест');
 
 userNameEl.textContent = firstName;
 const bgColor = tg.themeParams.button_color ? tg.themeParams.button_color.replace('#', '') : 'f4c01e';
