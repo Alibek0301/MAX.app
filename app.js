@@ -53,7 +53,7 @@ navItems.forEach(item => {
 async function initApp() {
     try {
         const urlParams = window.location.search;
-        const response = await fetch(`http://127.0.0.1:8000/api/user/${telegramId}${urlParams}`);
+        const response = await fetch(`https://swimsuit-sheath-viewless.ngrok-free.dev/api/user/${telegramId}${urlParams}`);
         const data = await response.json();
 
         loader.classList.add('hidden');
