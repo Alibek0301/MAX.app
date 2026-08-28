@@ -122,7 +122,7 @@ async function initApp() {
             } else {
                 balanceEl.textContent = '0 ₸';
             }
-            
+
 
             // Show driver statistical blocks in Rides tab
             const statsContainer = document.getElementById('driver-stats-container');
@@ -564,25 +564,25 @@ function selectPayment(el, name, icon) {
     window.currentPaymentMethod = name;
     document.getElementById('selected-payment-text').textContent = name;
     document.getElementById('selected-payment-icon').textContent = icon;
-    
+
     const pv = document.getElementById('profile-payment-value');
-    if(pv) pv.textContent = name;
+    if (pv) pv.textContent = name;
 
     // Update UI
     document.querySelectorAll('.payment-option').forEach(item => {
         item.style.border = '1px solid rgba(255,255,255,0.05)';
         const check = item.querySelector('span:last-child');
-        if(check && check.textContent === '✅') check.remove();
+        if (check && check.textContent === '✅') check.remove();
     });
     el.style.border = '1px solid var(--accent-color)';
-    el.innerHTML += <span style="color:var(--accent-color); font-size:18px;">✅</span>;
-    
+    el.innerHTML += '<span style="color:var(--accent-color); font-size:18px;">✅</span>';
+
     closePaymentModal();
 }
 
 function simulateAddCard() {
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    tg.showConfirm('Тестовая привязка. Спишется 10 ₸ для проверки.', function(confirmed) {
+    tg.showConfirm('Тестовая привязка. Спишется 10 ₸ для проверки.', function (confirmed) {
         if (confirmed) {
             tg.showAlert('Успешно! Новая карта Visa (*9910) привязана.');
             // Update to new card mentally
@@ -590,7 +590,7 @@ function simulateAddCard() {
             document.getElementById('selected-payment-text').textContent = 'Visa (*9910)';
             document.getElementById('selected-payment-icon').textContent = '💳';
             const pv = document.getElementById('profile-payment-value');
-            if(pv) pv.textContent = 'Visa *9910';
+            if (pv) pv.textContent = 'Visa *9910';
             closePaymentModal();
         }
     });
