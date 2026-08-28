@@ -190,10 +190,11 @@ function openAssignModal(orderId) {
     // Fill driver list
     const container = document.getElementById('driver-list-container');
     let html = '';
-    const drivers = window.fleetDrivers || [];
+    // Filter to only allowed drivers
+    const drivers = (window.fleetDrivers || []).filter(d => d.status === 'active');
 
     if (drivers.length === 0) {
-        container.innerHTML = '<div class="empty-msg">Нет доступных водителей</div>';
+        container.innerHTML = '<div class="empty-msg">Нет свободных водителей или у всех статус "Отстранен"</div>';
     } else {
         drivers.forEach(d => {
             const driverName = d.driver_name || d.first_name || 'Водитель';
