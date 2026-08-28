@@ -135,12 +135,8 @@
                     </div>
 
                     <div class="glass-card form-card">
-                        <h3 class="section-title">Быстрый вывод средств</h3>
-                        <div class="input-wrapper">
-                            <input type="number" id="withdraw-amount" placeholder="Сумма" autocomplete="off">
-                            <span class="currency">₸</span>
-                        </div>
-                        <button id="withdraw-btn" class="primary-btn" disabled>Перевести на Kaspi</button>
+                        <h3 class="section-title">Управление финансами</h3>
+                        <button class="primary-btn pulse-btn" onclick="openWalletModal()" style="margin-top:10px;">💸 ВЫВЕСТИ СРЕДСТВА</button>
                     </div>
                 </div>
 
@@ -521,6 +517,70 @@
         </div>
     </nav>
 
+    <!-- WALLET / FINANCE MODAL -->
+    <div id="wallet-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 class="section-title" style="margin-bottom:0;">Кошелек и Финансы</h3>
+                <button style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;" onclick="closeWalletModal()">&times;</button>
+            </div>
+            
+            <button class="primary-btn pulse-btn" style="margin-bottom: 20px;" onclick="requestWithdraw()">💸 ВЫВЕСТИ НА КАРТУ</button>
+
+            <!-- Баланс и бонусы -->
+            <div class="wallet-grid" style="margin-bottom:20px;">
+                <div class="glass-card wallet-card" style="margin-bottom:0; padding:15px;">
+                    <p class="wallet-label" style="font-size:11px;">Доступно к выводу</p>
+                    <h2 class="wallet-balance" id="modal-balance" style="font-size:22px; margin:5px 0;">0 ₸</h2>
+                </div>
+                <div class="glass-card wallet-card" style="margin-bottom:0; padding:15px; background: linear-gradient(135deg, rgba(244,192,30,0.1), rgba(244,192,30,0.02)); border-color: rgba(244,192,30,0.3);">
+                    <p class="wallet-label" style="color: var(--accent-color); font-size:11px;">MAX Бонусы</p>
+                    <h2 class="wallet-balance" style="font-size:22px; margin:5px 0;">150 ⭐️</h2>
+                </div>
+            </div>
+
+            <!-- Cards -->
+            <h3 class="section-title" style="font-size:14px; margin-bottom:10px;">Мои карты</h3>
+            <div class="glass-card" style="padding:15px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">💳</span>
+                        <div>
+                            <p style="font-size:13px; font-weight:600;">Kaspi Gold</p>
+                            <p style="font-size:11px; color:var(--hint-color);">**** 4512</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="primary-btn alt-btn" style="padding:8px; font-size:13px; width:100%;" onclick="tg.showAlert('Привязка новой карты будет доступна в следующем обновлении')">+ Привязать новую карту</button>
+            </div>
+
+            <!-- History -->
+            <h3 class="section-title" style="font-size:14px; margin-bottom:10px;">История операций</h3>
+            <div class="glass-card" style="padding:0; overflow:hidden; margin-bottom: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <div style="width:30px; height:30px; border-radius:8px; background:rgba(76,175,80,0.1); color:#4CAF50; display:flex; align-items:center; justify-content:center; font-size:16px;">+</div>
+                        <div>
+                            <p style="font-size:13px; font-weight:600;">Пополнение (Трансфер)</p>
+                            <p style="font-size:11px; color:var(--hint-color);">Сегодня</p>
+                        </div>
+                    </div>
+                    <p style="font-size:14px; font-weight:600; color:#4CAF50;">+12 750 ₸</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px;">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,82,82,0.1); color:#ff5252; display:flex; align-items:center; justify-content:center; font-size:16px;">-</div>
+                        <div>
+                            <p style="font-size:13px; font-weight:600;">Комиссия банка/парка</p>
+                            <p style="font-size:11px; color:var(--hint-color);">Сегодня</p>
+                        </div>
+                    </div>
+                    <p style="font-size:14px; font-weight:600; color:#ff5252;">-750 ₸</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- DISPATCHER ASSIGN DRIVER MODAL -->
     <div id="assign-driver-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -538,10 +598,11 @@
         </div>
     </div>
 
-    <script src="app.js?v=31"></script>
+    <script src="app.js?v=32"></script>
 </body>
 
 </html>
+
 
 
 

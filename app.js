@@ -122,7 +122,7 @@ async function initApp() {
             } else {
                 balanceEl.textContent = '0 ₸';
             }
-            setupDriverWithdraw();
+            
 
             // Show driver statistical blocks in Rides tab
             const statsContainer = document.getElementById('driver-stats-container');
