@@ -185,6 +185,7 @@ function renderOrders(orders, containerId) {
                 ${currentActiveRole === 'client' ? `<button class="repeat-order-btn" onclick="repeatOrder(${o.id}, '${o.from_address}', '${o.to_address}')">Повторить</button>` : ''}
                 ${(currentActiveRole === 'driver' || currentActiveRole === 'dispatcher') && o.phone ? `<a href="tel:${o.phone}" class="primary-btn alt-btn" style="display:inline-block; text-decoration:none; margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Позв. клиенту</a>` : ''}
                 ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px; width:auto;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
+                ${currentActiveRole === 'dispatcher' && o.status !== 'completed' && o.status !== 'cancelled' ? `<button class="primary-btn alt-btn" style="margin-top:10px; margin-left:5px; padding:8px 12px; font-size:12px; width:auto; border: 1px solid #ff5252; color:#ff5252;" onclick="cancelOrder(${o.id})">Отменить (✕)</button>` : ''}
             </div>
         `;
     });
@@ -241,7 +242,33 @@ function openAssignModal(orderId) {
     }
 
     document.getElementById('assign-driver-modal').classList.remove('hidden');
+    document.getElementById('assign-driver-modal').classList.remove('hidden');
     document.getElementById('confirm-assign-btn').disabled = true;
+}
+
+function cancelOrder(orderId) {
+    tg.showConfirm('Вы уверены, что хотите отменить этот заказ? Уведомление об отмене будет отправлено.', async function (confirmed) {
+        if (confirmed) {
+            try {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+                const baseUrl = window.location.origin.includes('github.io') ? 'https://swimsuit-sheath-viewless.ngrok-free.dev' : window.location.origin;
+                const response = await fetch(baseUrl + "/api/transfer/" + orderId + "/cancel", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ caller_id: telegramId })
+                });
+                const res = await response.json();
+                if (res.success) {
+                    tg.showAlert('Заказ успешно отменен!');
+                    setTimeout(() => initApp(), 1000);
+                } else {
+                    tg.showAlert('Ошибка при отмене!');
+                }
+            } catch (e) {
+                tg.showAlert('Сбой сети при отмене!');
+            }
+        }
+    });
 }
 
 function selectDriverForAssign(el, driverId) {
