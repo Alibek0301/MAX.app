@@ -442,7 +442,7 @@ function renderAdminDrivers() {
     }
 
     drivers.forEach(d => {
-        const isAllowed = true; // In the future, check real status
+        const isAllowed = d.status === "active";
         const toggleColor = isAllowed ? '#4CAF50' : 'var(--hint-color)';
         const btnText = isAllowed ? 'Отстранить' : 'Допустить';
         const statusText = isAllowed ? 'Допущен к трансферам' : 'Не допущен';
@@ -465,11 +465,27 @@ function renderAdminDrivers() {
     container.innerHTML = html;
 }
 
-function toggleDriverAccess(driverId) {
+async function toggleDriverAccess(driverId) {
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    tg.showAlert('Статус водителя (допуск к трансферам) успешно изменён!');
-    tg.sendData(JSON.stringify({
-        action: 'toggle_driver_access',
-        driver_id: driverId
-    }));
+    try {
+        const response = await fetch("https://swimsuit-sheath-viewless.ngrok-free.dev/api/driver/" + driverId + "/toggle", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({ caller_id: telegramId })
+        });
+        const result = await response.json();
+        if (result.success) {
+            // Update local state
+            const drv = window.fleetDrivers.find(d => d.telegram_id === driverId);
+            if (drv) drv.status = result.new_status;
+            renderAdminDrivers();
+        } else {
+            tg.showAlert('Ошибка: ' + result.error);
+        }
+    } catch (e) {
+        tg.showAlert('Ошибка сети при изменении статуса');
+    }
 }
