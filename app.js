@@ -112,12 +112,12 @@ async function initApp() {
                     balanceEl.style.background = 'none';
                     balanceEl.style.webkitTextFillColor = '#ff5252';
                     const bt = document.querySelector('.balance-title');
-                    if(bt) bt.textContent = 'Долг по комиссии (К ОПЛАТЕ)';
+                    if (bt) bt.textContent = 'Долг по комиссии (К ОПЛАТЕ)';
                 } else {
                     balanceEl.style.background = 'linear-gradient(90deg, #fff, var(--accent-color))';
                     balanceEl.style.webkitTextFillColor = 'transparent';
                     const bt = document.querySelector('.balance-title');
-                    if(bt) bt.textContent = 'Доступно к выводу';
+                    if (bt) bt.textContent = 'Доступно к выводу';
                 }
             } else {
                 balanceEl.textContent = '0 ₸';
@@ -166,13 +166,25 @@ function renderOrders(orders, containerId) {
 
     let html = '';
     orders.forEach(o => {
+        let statusColor = '#a1a1a1';
+        let prettyStatus = o.status;
+        if (o.status === 'new') { prettyStatus = 'Новый'; statusColor = 'var(--accent-color)'; }
+        else if (o.status === 'assigned') { prettyStatus = 'Назначен'; statusColor = '#4CAF50'; }
+        else if (['going', 'waiting', 'in_progress'].includes(o.status)) { prettyStatus = 'В процессе'; statusColor = '#2196F3'; }
+
         html += `
             <div class="order-card">
-                <h4>Заказ #${o.id}</h4>
-                <p>📍 ${o.from_address} ➡️ ${o.to_address}</p>
-                <p>🕒 ${o.date} ${o.time} | 🏷 ${o.status}</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <h4>Заказ #${o.id}</h4>
+                    <span style="font-size:11px; padding:2px 8px; border-radius:12px; border:1px solid ${statusColor}; color:${statusColor};">${prettyStatus}</span>
+                </div>
+                <p style="margin-bottom:3px;">👤 ${o.name} (${o.phone})</p>
+                <p style="margin-bottom:3px;">📍 ${o.from_address} ➡️ ${o.to_address}</p>
+                <p style="margin-bottom:3px;">🕒 ${o.date} ${o.time} • ${o.car_class || 'Эконом'}</p>
+                ${o.driver_id ? `<p style="margin-bottom:3px; color:var(--accent-color);">🚕 Водитель: ID ${o.driver_id}</p>` : ''}
                 ${currentActiveRole === 'client' ? `<button class="repeat-order-btn" onclick="repeatOrder(${o.id}, '${o.from_address}', '${o.to_address}')">Повторить</button>` : ''}
-                ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
+                ${(currentActiveRole === 'driver' || currentActiveRole === 'dispatcher') && o.phone ? `<a href="tel:${o.phone}" class="primary-btn alt-btn" style="display:inline-block; text-decoration:none; margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Позв. клиенту</a>` : ''}
+                ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px; width:auto;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
             </div>
         `;
     });
