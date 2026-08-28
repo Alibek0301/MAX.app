@@ -321,6 +321,18 @@
                         </div>
                     </div>
 
+                    <!-- Способ оплаты -->
+                    <div class="glass-card" style="padding:12px 15px; margin-top:10px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background: rgba(255,255,255,0.03);" onclick="openPaymentModal()">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:20px;" id="selected-payment-icon">💳</span>
+                            <div>
+                                <p style="font-size:11px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">Способ оплаты</p>
+                                <h3 style="font-size:14px; margin:0;" id="selected-payment-text">Kaspi Gold (*4512)</h3>
+                            </div>
+                        </div>
+                        <span style="color:var(--hint-color); font-size: 20px;">›</span>
+                    </div>
+
                     <!-- Комментарий -->
                     <div class="glass-card comment-card" style="margin-top: 5px;">
                         <input type="text" id="client-comment" placeholder="Дополнения (дет. кресло, много багажа)"
@@ -426,12 +438,12 @@
                         <span class="menu-arrow">›</span>
                     </div>
 
-                    <div class="menu-item" onclick="tg.showAlert('Раздел в разработке')">
+                    <div class="menu-item" onclick="openPaymentModal()">
                         <div class="menu-left">
                             <span class="menu-icon">💳</span>
                             <span>Способы оплаты</span>
                         </div>
-                        <span class="menu-value">Kaspi *4512</span>
+                        <span class="menu-value" id="profile-payment-value">Kaspi *4512</span>
                     </div>
 
                     <div class="menu-item" onclick="tg.showAlert('Переключаем на Русский')">
@@ -517,6 +529,36 @@
         </div>
     </nav>
 
+    <!-- PAYMENT METHODS MODAL -->
+    <div id="payment-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 class="section-title" style="margin-bottom:0;">Способы оплаты</h3>
+                <button style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;" onclick="closePaymentModal()">&times;</button>
+            </div>
+            
+            <div class="glass-card payment-option" style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px; border: 1px solid var(--accent-color); cursor:pointer;" onclick="selectPayment(this, 'Kaspi Gold (*4512)', '💳')">
+                <span style="font-size:22px;">💳</span>
+                <div style="flex-grow:1;">
+                    <p style="font-size:14px; font-weight:600; margin:0;">Kaspi Gold</p>
+                    <p style="font-size:12px; color:var(--hint-color); margin:0;">**** 4512</p>
+                </div>
+                <span style="color:var(--accent-color); font-size:18px;">✅</span>
+            </div>
+
+            <div class="glass-card payment-option" style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="selectPayment(this, 'Наличные', '💵')">
+                <span style="font-size:22px;">��</span>
+                <div style="flex-grow:1;">
+                    <p style="font-size:14px; font-weight:600; margin:0;">Наличные</p>
+                    <p style="font-size:12px; color:var(--hint-color); margin:0;">Оплата водителю</p>
+                </div>
+            </div>
+
+            <button class="primary-btn alt-btn" style="margin-top:15px;" onclick="simulateAddCard()">+ Привязать новую карту (Apple/Google Pay)</button>
+            <p style="font-size: 11px; color: var(--hint-color); text-align: center; margin-top: 15px;">Заказы будут оплачиваться автоматически по завершению поездки</p>
+        </div>
+    </div>
+
     <!-- WALLET / FINANCE MODAL -->
     <div id="wallet-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
@@ -598,10 +640,11 @@
         </div>
     </div>
 
-    <script src="app.js?v=32"></script>
+    <script src="app.js?v=33"></script>
 </body>
 
 </html>
+
 
 
 

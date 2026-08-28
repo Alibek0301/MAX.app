@@ -444,7 +444,8 @@ if (clientPickup) {
             duration_hours: clientRentType.value === 'hourly' ? clientDuration.value : 0,
             passengers: clientRentType.value === 'transfer' ? clientPassengers.value : 0,
             carClass: clientSelectedClass,
-            comment: clientComment.value.trim()
+            comment: clientComment.value.trim(),
+            payment_method: window.currentPaymentMethod || 'Kaspi Gold (*4512)'
         }));
     });
 }
@@ -545,4 +546,52 @@ async function toggleDriverAccess(driverId) {
     } catch (e) {
         tg.showAlert('Ошибка сети при изменении статуса');
     }
+}
+
+
+window.currentPaymentMethod = 'Kaspi Gold (*4512)';
+function openPaymentModal() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    document.getElementById('payment-modal').classList.remove('hidden');
+}
+
+function closePaymentModal() {
+    document.getElementById('payment-modal').classList.add('hidden');
+}
+
+function selectPayment(el, name, icon) {
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    window.currentPaymentMethod = name;
+    document.getElementById('selected-payment-text').textContent = name;
+    document.getElementById('selected-payment-icon').textContent = icon;
+    
+    const pv = document.getElementById('profile-payment-value');
+    if(pv) pv.textContent = name;
+
+    // Update UI
+    document.querySelectorAll('.payment-option').forEach(item => {
+        item.style.border = '1px solid rgba(255,255,255,0.05)';
+        const check = item.querySelector('span:last-child');
+        if(check && check.textContent === '✅') check.remove();
+    });
+    el.style.border = '1px solid var(--accent-color)';
+    el.innerHTML += <span style="color:var(--accent-color); font-size:18px;">✅</span>;
+    
+    closePaymentModal();
+}
+
+function simulateAddCard() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    tg.showConfirm('Тестовая привязка. Спишется 10 ₸ для проверки.', function(confirmed) {
+        if (confirmed) {
+            tg.showAlert('Успешно! Новая карта Visa (*9910) привязана.');
+            // Update to new card mentally
+            window.currentPaymentMethod = 'Visa (*9910)';
+            document.getElementById('selected-payment-text').textContent = 'Visa (*9910)';
+            document.getElementById('selected-payment-icon').textContent = '💳';
+            const pv = document.getElementById('profile-payment-value');
+            if(pv) pv.textContent = 'Visa *9910';
+            closePaymentModal();
+        }
+    });
 }
