@@ -104,7 +104,24 @@ async function initApp() {
 
         } else if (role === 'driver') {
             driverView.classList.remove('hidden');
-            document.getElementById('balance').textContent = '12 500 ₸';
+            const balanceEl = document.getElementById('balance');
+            if (window.driverData) {
+                const bal = parseInt(window.driverData.balance) || 0;
+                balanceEl.textContent = bal + ' ₸';
+                if (bal < 0) {
+                    balanceEl.style.background = 'none';
+                    balanceEl.style.webkitTextFillColor = '#ff5252';
+                    const bt = document.querySelector('.balance-title');
+                    if(bt) bt.textContent = 'Долг по комиссии (К ОПЛАТЕ)';
+                } else {
+                    balanceEl.style.background = 'linear-gradient(90deg, #fff, var(--accent-color))';
+                    balanceEl.style.webkitTextFillColor = 'transparent';
+                    const bt = document.querySelector('.balance-title');
+                    if(bt) bt.textContent = 'Доступно к выводу';
+                }
+            } else {
+                balanceEl.textContent = '0 ₸';
+            }
             setupDriverWithdraw();
 
             // Show driver statistical blocks in Rides tab
