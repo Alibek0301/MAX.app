@@ -104,6 +104,7 @@ async function initApp() {
 
         } else if (role === 'driver') {
             driverView.classList.remove('hidden');
+            document.getElementById('profile-finance-driver').classList.remove('hidden');
             const balanceEl = document.getElementById('balance');
             if (window.driverData) {
                 const bal = parseInt(window.driverData.balance) || 0;
@@ -128,12 +129,15 @@ async function initApp() {
             const statsContainer = document.getElementById('driver-stats-container');
             if (statsContainer) statsContainer.classList.remove('hidden');
 
-            // Populate BOTH the inner module and the central Rides Tab
+            // In home tab
+            renderOrders(data.active_orders, 'driver-home-orders');
+            // In rides tab
             renderOrders(data.active_orders, 'active-orders-container');
 
         } else {
             // Client
             clientView.classList.remove('hidden');
+            document.getElementById('profile-finance-client').classList.remove('hidden');
             renderOrders(data.active_orders, 'active-orders-container'); // Move to rides tab
         }
     } catch (error) {

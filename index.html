@@ -128,18 +128,10 @@
                     <div id="dispatcher-orders"></div>
                 </div>
 
-                <!-- DRIVER VIEW -->
+                                <!-- DRIVER VIEW -->
                 <div id="driver-view" class="role-view hidden">
-                    <div class="glass-card balance-card">
-                        <p class="balance-title">Доступно к выводу (Yandex API)</p>
-                        <h1 class="balance-amount" id="balance">0 ₸</h1>
-                        <p class="balance-subtitle">Данные обновлены только что</p>
-                    </div>
-
-                    <div class="glass-card form-card">
-                        <h3 class="section-title">Управление финансами</h3>
-                        <button class="primary-btn pulse-btn" onclick="openWalletModal()" style="margin-top:10px;">💸 ВЫВЕСТИ СРЕДСТВА</button>
-                    </div>
+                    <h3 class="section-title">В работе:</h3>
+                    <div id="driver-home-orders"></div>
                 </div>
 
                 <!-- DRIVER SYNC VIEW -->
@@ -412,26 +404,29 @@
                 </div>
             </div>
 
-            <!-- 3. PROFILE / SETTINGS TAB (Профиль) -->
+                        <!-- 3. PROFILE / SETTINGS TAB (Профиль) -->
             <div id="tab-profile" class="tab-content hidden">
-                <!-- Баланс и Бонусы -->
-                <div class="wallet-grid">
-                    <div class="glass-card wallet-card">
-                        <p class="wallet-label">Лицевой счет</p>
-                        <h2 class="wallet-balance">2 500 ₸</h2>
-                        <button class="wallet-btn">Пополнить</button>
-                    </div>
-                    <div class="glass-card wallet-card"
-                        style="background: linear-gradient(135deg, rgba(244,192,30,0.1), rgba(244,192,30,0.02)); border-color: rgba(244,192,30,0.3);">
-                        <p class="wallet-label" style="color: var(--accent-color);">MAX Бонусы</p>
-                        <h2 class="wallet-balance">150 ⭐️</h2>
-                        <button class="wallet-btn" style="color: var(--accent-color);">Потратить</button>
+                <div class="glass-card" style="padding:15px; margin-bottom:15px; display:flex; align-items:center; gap:15px;">
+                    <div id="profile-avatar-large" style="width:50px; height:50px; border-radius:50%; background:var(--accent-color); font-size:24px; display:flex; align-items:center; justify-content:center;">👤</div>
+                    <div>
+                        <h3 id="profile-name-large" style="margin:0; font-size:16px;">Пользователь</h3>
+                        <p id="profile-role-large" style="color:rgba(255,255,255,0.7); font-size:12px; margin:2px 0 0 0;">Статус</p>
                     </div>
                 </div>
 
-                <!-- Меню Настроек -->
-                <div class="glass-card profile-menu">
+                <h3 class="section-title">Финансы</h3>
+                <div id="profile-finance-driver" class="hidden">
+                    <button class="primary-btn pulse-btn" onclick="openWalletModal()" style="margin-bottom:15px; width:100%;">💸 Мой кошелек (Баланс и Вывод)</button>
+                </div>
+                <div id="profile-finance-client" class="hidden">
+                    <button class="primary-btn alt-btn" onclick="openPaymentModal()" style="margin-bottom:15px; width:100%; border-color:var(--accent-color); color:var(--accent-color);">💳 Мои карты и способы оплаты</button>
+                </div>
+                <div id="profile-finance-admin" class="hidden">
+                    <button class="primary-btn" onclick="tg.showAlert('Для получения отчета за месяц отправьте команду /report боту Управления')" style="margin-bottom:15px; width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.1); color:var(--text-color);">📊 Выгрузить финансовый отчет</button>
+                </div>
 
+                <h3 class="section-title">Настройки</h3>
+                <div class="glass-card profile-menu">
                     <div class="menu-item" onclick="document.querySelector('[data-tab=\'tab-rides\']').click();">
                         <div class="menu-left">
                             <span class="menu-icon">🚗</span>
@@ -439,57 +434,17 @@
                         </div>
                         <span class="menu-arrow">›</span>
                     </div>
-
-                    <div class="menu-item" onclick="openPaymentModal()">
+                    <div class="menu-item" onclick="tg.showAlert('Язык приложения будет добавлен в следующем обновлении')">
                         <div class="menu-left">
-                            <span class="menu-icon">💳</span>
-                            <span>Способы оплаты</span>
-                        </div>
-                        <span class="menu-value" id="profile-payment-value">Kaspi *4512</span>
-                    </div>
-
-                    <div class="menu-item" onclick="tg.showAlert('Переключаем на Русский')">
-                        <div class="menu-left">
-                            <span class="menu-icon">🌍</span>
-                            <span>Язык (Language)</span>
+                            <span class="menu-icon">🌐</span>
+                            <span>Язык приложения</span>
                         </div>
                         <span class="menu-value">Русский</span>
                     </div>
-
-                    <div class="menu-item" onclick="tg.showAlert('Оферта...')">
-                        <div class="menu-left">
-                            <span class="menu-icon">📜</span>
-                            <span>Оферта и условия</span>
-                        </div>
-                        <span class="menu-arrow">›</span>
-                    </div>
-
-                    <div class="menu-item" style="border-bottom:none; margin-bottom:0; padding-bottom:0;"
-                        onclick="tg.showAlert('Начинаем чат с диспетчером')">
-                        <div class="menu-left">
-                            <span class="menu-icon">🎧</span>
-                            <span>Служба поддержки</span>
-                        </div>
-                        <span class="menu-arrow">›</span>
-                    </div>
-
                 </div>
-
-                <button id="btn-become-driver" class="primary-btn pulse-btn"
-                    style="margin-bottom:10px; background: rgba(244,192,30,0.1); border: 1px solid var(--accent-color); color: var(--accent-color);"
-                    onclick="
-                    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                    document.getElementById('tab-home').classList.remove('hidden');
-                    document.querySelectorAll('.role-view').forEach(el => el.classList.add('hidden'));
-                    document.getElementById('driver-registration-view').classList.remove('hidden');
-                    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                    document.querySelector('[data-tab=\'tab-home\']').classList.add('active');
-                ">Стать водителем</button>
-
-                <button class="primary-btn alt-btn" onclick="tg.close()">Выйти</button>
             </div>
         </div>
-    </div>
+
 
     <!-- BOTTOM NAVIGATION BAR -->
     <nav class="bottom-nav hidden" id="bottom-nav">
@@ -666,10 +621,11 @@
         </div>
     </div>
 
-    <script src="app.js?v=36"></script>
+    <script src="app.js?v=37"></script>
 </body>
 
 </html>
+
 
 
 
