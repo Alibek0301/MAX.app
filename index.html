@@ -122,6 +122,8 @@
                         </div>
                     </div>
 
+                    <h3 class="section-title">Водители</h3>
+                    <div id="dispatcher-drivers-list" style="margin-bottom: 20px;"></div>
                     <h3 class="section-title">Биржа: Новые заявки</h3>
                     <div id="dispatcher-orders"></div>
                 </div>
@@ -529,6 +531,30 @@
         </div>
     </nav>
 
+    <!-- MANAGE DRIVER BALANCE MODAL -->
+    <div id="manage-driver-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 class="section-title" style="margin-bottom:0;" id="manage-driver-name">Управление балансом</h3>
+                <button style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;" onclick="closeManageDriverModal()">&times;</button>
+            </div>
+            
+            <div class="glass-card wallet-card" style="margin-bottom:20px; padding:20px; text-align:center;">
+                <p class="wallet-label">Текущий баланс</p>
+                <h2 class="wallet-balance" id="manage-driver-balance" style="font-size:28px; margin:5px 0;">0 ₸</h2>
+            </div>
+
+            <div class="input-wrapper" style="margin-bottom:10px;">
+                <input type="number" id="manage-amount" placeholder="Сумма (например: 1500 или -500)" autocomplete="off">
+                <span class="currency">₸</span>
+            </div>
+            <div class="input-wrapper" style="margin-bottom:20px;">
+                <input type="text" id="manage-desc" placeholder="Причина (например: Ручное пополнение)" autocomplete="off">
+            </div>
+            <button class="primary-btn pulse-btn" id="manage-driver-btn" onclick="submitDriverBalance()">Подтвердить изменение</button>
+        </div>
+    </div>
+
     <!-- PAYMENT METHODS MODAL -->
     <div id="payment-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
@@ -640,10 +666,11 @@
         </div>
     </div>
 
-    <script src="app.js?v=35"></script>
+    <script src="app.js?v=36"></script>
 </body>
 
 </html>
+
 
 
 

@@ -488,14 +488,16 @@ initApp();
 
 // --- ADMIN LOGIC ---
 function renderAdminDrivers() {
-    const container = document.getElementById('admin-drivers-list');
-    if (!container) return;
+    const adminContainer = document.getElementById('admin-drivers-list');
+    const dispContainer = document.getElementById('dispatcher-drivers-list');
 
     let html = '';
     const drivers = window.fleetDrivers || [];
 
     if (drivers.length === 0) {
-        container.innerHTML = '<div class="empty-msg">Нет водителей в базе</div>';
+        html = '<div class="empty-msg">Нет водителей в базе</div>';
+        if (adminContainer) adminContainer.innerHTML = html;
+        if (dispContainer) dispContainer.innerHTML = html;
         return;
     }
 
@@ -515,12 +517,16 @@ function renderAdminDrivers() {
                         <p style="font-size:12px; color:var(--hint-color); margin-bottom:2px;">${carInfo}</p>
                         <p style="font-size:11px; color:${toggleColor}; font-weight:600;">${statusText}</p>
                     </div>
-                    <button class="primary-btn alt-btn" style="width:auto; padding:8px 12px; font-size:11px;" onclick="toggleDriverAccess(${d.telegram_id})">${btnText}</button>
+                    <div style="display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
+                        <button class="primary-btn alt-btn" style="width:auto; padding:6px 12px; font-size:11px;" onclick="toggleDriverAccess(${d.telegram_id})">${btnText}</button>
+                        <button class="primary-btn" style="width:auto; padding:6px 12px; font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-color);" onclick="openManageDriverModal(${d.telegram_id})">💰 Финансы</button>
+                    </div>
                 </div>
             </div>
         `;
     });
-    container.innerHTML = html;
+    if (adminContainer) adminContainer.innerHTML = html;
+    if (dispContainer) dispContainer.innerHTML = html;
 }
 
 async function toggleDriverAccess(driverId) {
