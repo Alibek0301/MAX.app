@@ -227,8 +227,8 @@ function renderOrders(orders, containerId) {
                 ` : ''}
 
                 <!-- Dispatcher Call/Assign/Cancel Buttons -->
-                ${currentActiveRole === 'dispatcher' ? <button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(, , '', '')">✏️ Ред.</button> : ''}
-                ${currentActiveRole === 'dispatcher' ? <button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(, , '', '')">✏️ Ред.</button> : ''}
+                ${currentActiveRole === 'dispatcher' ? `<button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(${o.id}, ${o.price || 'null'}, '${o.date || ''}', '${o.time || ''}')">✏️ Ред.</button>` : ''}
+                ${currentActiveRole === 'dispatcher' && o.driver_id ? `<button class="primary-btn alt-btn" style="margin-top:10px; margin-left:5px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #2196F3; color:#2196F3;" onclick="openChatModal(${o.id})">💬 Чат</button>` : ''}
                 ${currentActiveRole === 'dispatcher' && o.phone ? `<a href="tel:${o.phone}" class="primary-btn alt-btn" style="display:inline-block; text-decoration:none; margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Позв. клиенту</a>` : ''}
                 ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px; width:auto;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
                 ${currentActiveRole === 'dispatcher' && o.status !== 'completed' && o.status !== 'cancelled' ? `<button class="primary-btn alt-btn" style="margin-top:10px; margin-left:5px; padding:8px 12px; font-size:12px; width:auto; border: 1px solid #ff5252; color:#ff5252;" onclick="cancelOrder(${o.id})">Отменить (✕)</button>` : ''}
@@ -957,7 +957,7 @@ document.getElementById('send-chat-btn')?.addEventListener('click', async () => 
             body: JSON.stringify({ caller_id: window.tgData.user.id, message: msg })
         });
         tg.showAlert('Сообщение отправлено водителю!');
-    } catch(e) {}
+    } catch (e) { }
     document.getElementById('chat-driver-modal').classList.add('hidden');
 });
 
@@ -969,5 +969,5 @@ async function loadAdminStats() {
         document.getElementById('dash-comp').textContent = data.total_completed;
         document.getElementById('dash-total-ord').textContent = data.total_orders;
         document.getElementById('dash-drv-on').textContent = data.drivers_online + ' / ' + data.total_drivers;
-    } catch(e) {}
+    } catch (e) { }
 }
