@@ -73,6 +73,11 @@ async function initApp() {
         currentActiveRole = role;
         roleBadgeEl.textContent = getRoleName(role);
 
+        // Update Profile Tab
+        document.getElementById('profile-name-large').textContent = firstName;
+        document.getElementById('profile-role-large').textContent = getRoleName(role);
+        document.getElementById('profile-avatar-large').src = userAvatarEl.src;
+
         // Hide "Become Driver" button if user is already a driver or higher
         if (role !== 'client') {
             const btnBecomeDriver = document.getElementById('btn-become-driver');
@@ -94,36 +99,40 @@ async function initApp() {
             renderAdminDrivers();
             renderOrders(data.new_orders, 'dispatcher-orders');
             renderOrders(data.active_orders, 'active-orders-container');
+            renderOrders(data.history_orders, 'history-orders-container');
 
         } else if (role === 'dispatcher') {
             dispatcherView.classList.remove('hidden');
             renderOrders(data.new_orders, 'dispatcher-orders');
 
+            document.getElementById('disp-stat-users').textContent = data.stats ? data.stats.users : 0;
+            document.getElementById('disp-stat-drivers').textContent = data.stats ? data.stats.drivers : 0;
+            document.getElementById('disp-stat-orders').textContent = data.stats ? data.stats.transfers : 0;
+
             // Populate rides tab with active fleet rides (mocking with new orders for visual)
-            renderOrders(data.new_orders, 'active-orders-container');
+            renderOrders(data.active_orders, 'active-orders-container');
+            renderOrders(data.history_orders, 'history-orders-container');
 
         } else if (role === 'driver') {
             driverView.classList.remove('hidden');
             document.getElementById('profile-finance-driver').classList.remove('hidden');
-            const balanceEl = document.getElementById('balance');
-            if (window.driverData) {
-                const bal = parseInt(window.driverData.balance) || 0;
-                balanceEl.textContent = bal + ' ₸';
-                if (bal < 0) {
-                    balanceEl.style.background = 'none';
-                    balanceEl.style.webkitTextFillColor = '#ff5252';
-                    const bt = document.querySelector('.balance-title');
-                    if (bt) bt.textContent = 'Долг по комиссии (К ОПЛАТЕ)';
-                } else {
-                    balanceEl.style.background = 'linear-gradient(90deg, #fff, var(--accent-color))';
-                    balanceEl.style.webkitTextFillColor = 'transparent';
-                    const bt = document.querySelector('.balance-title');
-                    if (bt) bt.textContent = 'Доступно к выводу';
-                }
-            } else {
-                balanceEl.textContent = '0 ₸';
-            }
 
+            window.driverData = data.driver || null;
+            window.driverTransactions = data.transactions || [];
+
+            // Display Yandex Info if available
+            if (window.driverData && window.driverData.yandex_id) {
+                document.getElementById('driver-yandex-status-block').classList.remove('hidden');
+                document.getElementById('driver-yandex-car').textContent = window.driverData.yandex_car || 'Автомобиль не привязан';
+                let wkStatus = window.driverData.yandex_status === 'working' ? '🟢 На линии' : '🔴 Офлайн / ' + window.driverData.yandex_status;
+                if (window.driverData.yandex_status === 'working') {
+                    document.getElementById('driver-yandex-work-status').style.color = '#4CAF50';
+                } else {
+                    document.getElementById('driver-yandex-work-status').style.color = 'var(--hint-color)';
+                }
+                document.getElementById('driver-yandex-work-status').textContent = 'Статус Yandex: ' + (wkStatus || 'Неизвестно');
+                document.getElementById('driver-yandex-id').textContent = 'ID: ' + window.driverData.yandex_id;
+            }
 
             // Show driver statistical blocks in Rides tab
             const statsContainer = document.getElementById('driver-stats-container');
@@ -133,12 +142,14 @@ async function initApp() {
             renderOrders(data.active_orders, 'driver-home-orders');
             // In rides tab
             renderOrders(data.active_orders, 'active-orders-container');
+            renderOrders(data.history_orders, 'history-orders-container');
 
         } else {
             // Client
             clientView.classList.remove('hidden');
             document.getElementById('profile-finance-client').classList.remove('hidden');
-            renderOrders(data.active_orders, 'active-orders-container'); // Move to rides tab
+            renderOrders(data.active_orders, 'active-orders-container');
+            renderOrders(data.history_orders, 'history-orders-container');
         }
     } catch (error) {
         // Fallback Client Mock
@@ -175,6 +186,17 @@ function renderOrders(orders, containerId) {
         if (o.status === 'new') { prettyStatus = 'Новый'; statusColor = 'var(--accent-color)'; }
         else if (o.status === 'assigned') { prettyStatus = 'Назначен'; statusColor = '#4CAF50'; }
         else if (['going', 'waiting', 'in_progress'].includes(o.status)) { prettyStatus = 'В процессе'; statusColor = '#2196F3'; }
+        else if (o.status === 'completed') { prettyStatus = 'Завершен'; statusColor = '#9e9e9e'; }
+        else if (o.status === 'cancelled') { prettyStatus = 'Отменен'; statusColor = '#ff5252'; }
+
+        let driverDisplay = `ID ${o.driver_id}`;
+        if (o.driver_id && window.fleetDrivers) {
+            const drv = window.fleetDrivers.find(d => d.telegram_id === o.driver_id);
+            if (drv) {
+                driverDisplay = drv.driver_name || drv.first_name || driverDisplay;
+                if (drv.car_brand) driverDisplay += ` • ${drv.car_brand}`;
+            }
+        }
 
         html += `
             <div class="order-card">
@@ -185,9 +207,29 @@ function renderOrders(orders, containerId) {
                 <p style="margin-bottom:3px;">👤 ${o.name} (${o.phone})</p>
                 <p style="margin-bottom:3px;">📍 ${o.from_address} ➡️ ${o.to_address}</p>
                 <p style="margin-bottom:3px;">🕒 ${o.date} ${o.time} • ${o.car_class || 'Эконом'}</p>
-                ${o.driver_id ? `<p style="margin-bottom:3px; color:var(--accent-color);">🚕 Водитель: ID ${o.driver_id}</p>` : ''}
+                ${o.passengers || o.luggage ? `<p style="margin-bottom:3px; color:var(--hint-color); font-size:12px;">👥 Пасс: ${o.passengers || '-'} | 🧳 Багаж: ${o.luggage || '-'}</p>` : ''}
+                ${o.flight_number ? `<p style="margin-bottom:3px; color:var(--hint-color); font-size:12px;">✈️ Рейс: <b>${o.flight_number}</b></p>` : ''}
+                ${o.meet_sign ? `<p style="margin-bottom:3px; color:var(--hint-color); font-size:12px;">🪧 Табличка: <b>${o.meet_sign}</b></p>` : ''}
+                
+                ${o.driver_id ? `<p style="margin-bottom:3px; color:var(--accent-color);">🚕 Водитель: ${driverDisplay}</p>` : ''}
                 ${currentActiveRole === 'client' ? `<button class="repeat-order-btn" onclick="repeatOrder(${o.id}, '${o.from_address}', '${o.to_address}')">Повторить</button>` : ''}
-                ${(currentActiveRole === 'driver' || currentActiveRole === 'dispatcher') && o.phone ? `<a href="tel:${o.phone}" class="primary-btn alt-btn" style="display:inline-block; text-decoration:none; margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Позв. клиенту</a>` : ''}
+                
+                <!-- Driver Status Buttons -->
+                ${currentActiveRole === 'driver' && o.status !== 'completed' && o.status !== 'cancelled' ? `
+                    <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
+                        <a href="tel:${o.phone}" class="primary-btn alt-btn" style="text-decoration:none; padding:6px 10px; font-size:11px; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Звонок</a>
+                        <a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(o.from_address + ' - ' + o.to_address)}&rtt=auto" target="_blank" class="primary-btn alt-btn" style="text-decoration:none; padding:6px 10px; font-size:11px; border: 1px solid #4CAF50; color:#4CAF50;">🧭 Навигатор</a>
+                        ${o.status === 'assigned' ? `<button class="primary-btn pulse-btn" style="padding:6px 10px; font-size:11px;" onclick="updateOrderStatus(${o.id}, 'going')">Выехал</button>` : ''}
+                        ${o.status === 'going' ? `<button class="primary-btn pulse-btn" style="padding:6px 10px; font-size:11px;" onclick="updateOrderStatus(${o.id}, 'waiting')">На месте (Ожидаю)</button>` : ''}
+                        ${o.status === 'waiting' ? `<button class="primary-btn pulse-btn" style="padding:6px 10px; font-size:11px;" onclick="updateOrderStatus(${o.id}, 'in_progress')">Поехали</button>` : ''}
+                        ${o.status === 'in_progress' ? `<button class="primary-btn pulse-btn" style="padding:6px 10px; font-size:11px;" onclick="updateOrderStatus(${o.id}, 'completed')">Завершить</button>` : ''}
+                    </div>
+                ` : ''}
+
+                <!-- Dispatcher Call/Assign/Cancel Buttons -->
+                ${currentActiveRole === 'dispatcher' ? <button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(, , '', '')">✏️ Ред.</button> : ''}
+                ${currentActiveRole === 'dispatcher' ? <button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(, , '', '')">✏️ Ред.</button> : ''}
+                ${currentActiveRole === 'dispatcher' && o.phone ? `<a href="tel:${o.phone}" class="primary-btn alt-btn" style="display:inline-block; text-decoration:none; margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Позв. клиенту</a>` : ''}
                 ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px; width:auto;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
                 ${currentActiveRole === 'dispatcher' && o.status !== 'completed' && o.status !== 'cancelled' ? `<button class="primary-btn alt-btn" style="margin-top:10px; margin-left:5px; padding:8px 12px; font-size:12px; width:auto; border: 1px solid #ff5252; color:#ff5252;" onclick="cancelOrder(${o.id})">Отменить (✕)</button>` : ''}
             </div>
@@ -196,19 +238,50 @@ function renderOrders(orders, containerId) {
     container.innerHTML = html;
 }
 
+// Add API Call logic for driver to update status
+async function updateOrderStatus(orderId, newStatus) {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    try {
+        const urlParams = window.location.search;
+        const resp = await fetch(`https://swimsuit-sheath-viewless.ngrok-free.dev/api/order/${orderId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({ caller_id: telegramId, status: newStatus })
+        });
+        const result = await resp.json();
+        if (result.success) {
+            initApp(); // Refresh orders visually
+        } else {
+            tg.showAlert('Ошибка обновления статуса');
+        }
+    } catch (e) {
+        tg.showAlert('Ошибка сети');
+    }
+}
+
 function repeatOrder(id, from, to) {
     if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
     const tabHome = document.querySelector('[data-tab="tab-home"]');
     if (tabHome) tabHome.click();
+    if (clientPickup) clientPickup.value = from;
+    if (clientDropoff) clientDropoff.value = to;
+}
 
-    // Fill the addresses
+function setAddress(addr) {
+    if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
     const pickup = document.getElementById('client-pickup');
     const dropoff = document.getElementById('client-dropoff');
 
-    if (pickup && dropoff) {
-        pickup.value = from;
-        dropoff.value = to;
-        pickup.dispatchEvent(new Event('input'));
+    // Если поле "Откуда" пустое, ставим туда. Иначе если "Куда" пустое, ставим туда. Иначе заменяем "Куда".
+    if (!pickup.value) {
+        pickup.value = addr;
+    } else if (!dropoff.value) {
+        dropoff.value = addr;
+    } else {
+        dropoff.value = addr;
     }
 }
 
@@ -234,12 +307,12 @@ function openAssignModal(orderId) {
             const driverName = d.driver_name || d.first_name || 'Водитель';
             const carInfo = d.car_brand ? `${d.car_brand} • <b>${d.car_number || ''}</b>` : 'Нет авто';
             html += `
-                <div class="driver-list-item" onclick="selectDriverForAssign(this, ${d.telegram_id})" id="drv-item-${d.telegram_id}">
-                    <div>
-                        <h4 style="font-size:13px; margin-bottom:2px;">${driverName}</h4>
-                        <p style="font-size:11px; color:var(--hint-color);">${carInfo}</p>
-                    </div>
-                </div>
+        < div class= "driver-list-item" onclick = "selectDriverForAssign(this, ${d.telegram_id})" id = "drv-item-${d.telegram_id}" >
+        <div>
+            <h4 style="font-size:13px; margin-bottom:2px;">${driverName}</h4>
+            <p style="font-size:11px; color:var(--hint-color);">${carInfo}</p>
+        </div>
+                </div >
             `;
         });
         container.innerHTML = html;
@@ -424,7 +497,7 @@ if (clientPickup) {
         });
     });
 
-    clientOrderBtn.addEventListener('click', () => {
+    clientOrderBtn.addEventListener('click', async () => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
         // Collect selected days if schedule
@@ -433,24 +506,50 @@ if (clientPickup) {
             document.querySelectorAll('.day-check:checked').forEach(el => scheduleDays.push(el.value));
         }
 
-        tg.sendData(JSON.stringify({
-            action: 'client_order',
-            rent_type: clientRentType.value,
-            pickup: clientPickup.value.trim(),
-            dropoff: clientRentType.value === 'transfer' ? clientDropoff.value.trim() : '',
-            date: clientDate.value,
-            time: clientTime ? clientTime.value : '',
-            frequency: clientRentType.value === 'transfer' ? clientFrequency.value : 'once',
-            schedule_days: scheduleDays.join(','),
-            return_trip: clientReturnCheck.checked ? '1' : '0',
-            return_date: clientReturnCheck.checked ? clientReturnDate.value : '',
-            return_time: clientReturnCheck.checked ? clientReturnTime.value : '',
-            duration_hours: clientRentType.value === 'hourly' ? clientDuration.value : 0,
-            passengers: clientRentType.value === 'transfer' ? clientPassengers.value : 0,
-            carClass: clientSelectedClass,
-            comment: clientComment.value.trim(),
-            payment_method: window.currentPaymentMethod || 'Kaspi Gold (*4512)'
-        }));
+        const orderBtnOrigText = clientOrderBtn.innerHTML;
+        clientOrderBtn.innerHTML = 'Загрузка...';
+        clientOrderBtn.disabled = true;
+
+        try {
+            const res = await fetch("https://swimsuit-sheath-viewless.ngrok-free.dev/api/order/create", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({
+                    telegram_id: telegramId,
+                    name: firstName,
+                    phone: '',
+                    pickup: clientPickup.value.trim(),
+                    dropoff: clientRentType.value === 'transfer' ? clientDropoff.value.trim() : '',
+                    date: clientDate.value,
+                    time: clientTime ? clientTime.value : '',
+                    frequency: clientRentType.value === 'transfer' ? clientFrequency.value : 'once',
+                    schedule_days: scheduleDays.join(','),
+                    return_trip: clientReturnCheck.checked ? '1' : '0',
+                    return_date: clientReturnCheck.checked ? clientReturnDate.value : '',
+                    return_time: clientReturnCheck.checked ? clientReturnTime.value : '',
+                    duration_hours: clientRentType.value === 'hourly' ? clientDuration.value : 0,
+                    passengers: clientRentType.value === 'transfer' ? clientPassengers.value : 0,
+                    luggage: document.getElementById('client-luggage') ? document.getElementById('client-luggage').value : 0,
+                    flight_number: document.getElementById('client-flight') ? document.getElementById('client-flight').value.trim() : '',
+                    meet_sign: document.getElementById('client-meet-sign') ? document.getElementById('client-meet-sign').value.trim() : '',
+                    carClass: clientSelectedClass,
+                    comment: clientComment.value.trim(),
+                    payment_method: window.currentPaymentMethod || 'Наличные'
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                tg.showAlert('Заказ успешно создан! Диспетчер скоро назначит водителя.');
+                initApp(); // reload items
+            } else {
+                tg.showAlert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        } catch (e) {
+            tg.showAlert('Ошибка сети, попробуйте позже.');
+        } finally {
+            clientOrderBtn.innerHTML = orderBtnOrigText;
+            clientOrderBtn.disabled = false;
+        }
     });
 }
 
@@ -468,17 +567,38 @@ if (syncBtnCheck) {
             syncStep2.classList.remove('hidden');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-            // Mock API Sync delay
-            setTimeout(() => {
-                syncStep2.classList.add('hidden');
-                syncStep3.classList.remove('hidden');
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            // Mock API Sync delay (3 seconds loading UI)
+            setTimeout(async () => {
 
-                tg.sendData(JSON.stringify({
-                    action: 'yandex_sync',
-                    phone: syncPhone.value.trim()
-                }));
-            }, 3000); // 3 seconds fake sync
+                try {
+                    const res = await fetch("https://swimsuit-sheath-viewless.ngrok-free.dev/api/yandex/sync", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify({ telegram_id: telegramId, phone: syncPhone.value.trim() })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        syncStep2.classList.add('hidden');
+                        syncStep3.classList.remove('hidden');
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        setTimeout(() => {
+                            initApp(); // Switch to driver role view
+                            driverRegistrationView.classList.add('hidden');
+                        }, 2500);
+                    } else {
+                        syncStep2.classList.add('hidden');
+                        syncStep1.classList.remove('hidden');
+                        tg.showAlert('Ошибка: профиль Яндекса не найден.\n' + (data.error || ''));
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                    }
+                } catch (e) {
+                    syncStep2.classList.add('hidden');
+                    syncStep1.classList.remove('hidden');
+                    tg.showAlert('Ошибка сети при синхронизации.');
+                }
+
+            }, 1000);
 
         } else {
             tg.showAlert('Пожалуйста, введите корректный номер телефона.');
@@ -488,7 +608,7 @@ if (syncBtnCheck) {
 
 // Kickstart
 initApp();
-
+setInterval(initApp, 5000); // Автообновление каждые 5 сек
 
 // --- ADMIN LOGIC ---
 function renderAdminDrivers() {
@@ -511,7 +631,16 @@ function renderAdminDrivers() {
         const btnText = isAllowed ? 'Отстранить' : 'Допустить';
         const statusText = isAllowed ? 'Допущен к трансферам' : 'Не допущен';
         const driverName = d.driver_name || d.first_name || 'Водитель';
-        const carInfo = d.car_brand ? `${d.car_brand} • ${d.car_number || ''}` : 'Нет авто';
+
+        let carInfo = d.car_brand ? `${d.car_brand} • ${d.car_number || ''} ` : 'Нет авто';
+        let yandexInfoHtml = '';
+        if (d.yandex_id) {
+            let wkStatus = d.yandex_status === 'working' ? '<span style="color:#4CAF50;">🟢 На линии</span>' : '<span style="color:var(--hint-color);">🔴 Офлайн</span>';
+            yandexInfoHtml = `<div style="background: rgba(244,192,30,0.05); border:1px solid rgba(244,192,30,0.2); padding: 6px 10px; border-radius: 8px; margin-top: 5px;">
+                                <p style="font-size:11px; margin-bottom:2px; color:var(--accent-color);"><b>Yandex.PRO:</b> ${wkStatus}</p>
+                                <p style="font-size:11px; color:var(--hint-color);"><span style="color:var(--text-color);">🚕</span> ${d.yandex_car || 'Нет авто'}</p>
+                              </div>`;
+        }
 
         html += `
             <div class="glass-card" style="margin-bottom:10px; padding:15px; border-left: 4px solid ${toggleColor};">
@@ -520,6 +649,7 @@ function renderAdminDrivers() {
                         <h4 style="font-size:15px; margin-bottom:5px;">${driverName}</h4>
                         <p style="font-size:12px; color:var(--hint-color); margin-bottom:2px;">${carInfo}</p>
                         <p style="font-size:11px; color:${toggleColor}; font-weight:600;">${statusText}</p>
+                        ${yandexInfoHtml}
                     </div>
                     <div style="display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
                         <button class="primary-btn alt-btn" style="width:auto; padding:6px 12px; font-size:11px;" onclick="toggleDriverAccess(${d.telegram_id})">${btnText}</button>
@@ -527,7 +657,7 @@ function renderAdminDrivers() {
                     </div>
                 </div>
             </div>
-        `;
+            `;
     });
     if (adminContainer) adminContainer.innerHTML = html;
     if (dispContainer) dispContainer.innerHTML = html;
@@ -558,6 +688,107 @@ async function toggleDriverAccess(driverId) {
     }
 }
 
+// --- MANAGE DRIVER BALANCE (Admin/Dispatcher) ---
+let activeManageDriverId = null;
+
+async function openManageDriverModal(driverId) {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    activeManageDriverId = driverId;
+
+    // Find driver in local state
+    const drv = (window.fleetDrivers || []).find(d => d.telegram_id === driverId);
+    const driverName = drv ? (drv.driver_name || drv.first_name || 'Водитель') : 'Водитель';
+
+    document.getElementById('manage-driver-name').textContent = '💰 ' + driverName;
+    document.getElementById('manage-amount').value = '';
+    document.getElementById('manage-desc').value = '';
+
+    // Show modal first with loading state
+    document.getElementById('manage-driver-balance').textContent = '...';
+    document.getElementById('manage-driver-modal').classList.remove('hidden');
+
+    // Fetch current balance from API
+    try {
+        const BASE = 'https://swimsuit-sheath-viewless.ngrok-free.dev';
+        const resp = await fetch(`${BASE} /api/driver / ${driverId}/balance`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            const bal = data.balance ?? 0;
+            const balEl = document.getElementById('manage-driver-balance');
+            balEl.textContent = bal.toLocaleString('ru-RU') + ' ₸';
+            balEl.style.color = bal < 0 ? '#ff5252' : '#4CAF50';
+        }
+    } catch (e) {
+        document.getElementById('manage-driver-balance').textContent = 'Ошибка загрузки';
+    }
+}
+
+function closeManageDriverModal() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    document.getElementById('manage-driver-modal').classList.add('hidden');
+    activeManageDriverId = null;
+}
+
+async function submitDriverBalance() {
+    const amount = parseInt(document.getElementById('manage-amount').value);
+    const desc = document.getElementById('manage-desc').value.trim();
+
+    if (!amount || amount === 0) {
+        tg.showAlert('Введите сумму (положительную для пополнения, отрицательную для списания)');
+        return;
+    }
+    if (!desc) {
+        tg.showAlert('Укажите причину изменения баланса');
+        return;
+    }
+    if (!activeManageDriverId) return;
+
+    const confirmMsg = amount > 0
+        ? `Зачислить +${amount} ₸ водителю?\nПричина: ${desc}`
+        : `Списать ${amount} ₸ с водителя?\nПричина: ${desc}`;
+
+    tg.showConfirm(confirmMsg, async (confirmed) => {
+        if (!confirmed) return;
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+        const btn = document.getElementById('manage-driver-btn');
+        btn.disabled = true;
+        btn.textContent = 'Отправка...';
+
+        try {
+            const BASE = 'https://swimsuit-sheath-viewless.ngrok-free.dev';
+            const resp = await fetch(`${BASE}/api/driver/${activeManageDriverId}/balance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({
+                    caller_id: telegramId,
+                    amount: amount,
+                    description: desc
+                })
+            });
+            const result = await resp.json();
+            if (result.success) {
+                tg.showAlert(`✅ Готово! Новый баланс: ${result.new_balance.toLocaleString('ru-RU')} ₸`);
+                // Update local driver balance display
+                const drv = (window.fleetDrivers || []).find(d => d.telegram_id === activeManageDriverId);
+                if (drv) drv.balance = result.new_balance;
+                closeManageDriverModal();
+            } else {
+                tg.showAlert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+            }
+        } catch (e) {
+            tg.showAlert('Ошибка сети. Проверьте подключение.');
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Подтвердить изменение';
+    });
+}
 
 window.currentPaymentMethod = 'Kaspi Gold (*4512)';
 function openPaymentModal() {
@@ -604,4 +835,139 @@ function simulateAddCard() {
             closePaymentModal();
         }
     });
+}
+
+function openWalletModal() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+    // Update balance
+    if (window.driverData) {
+        const bal = parseInt(window.driverData.balance) || 0;
+        const yandexBal = parseInt(window.driverData.yandex_balance) || 0;
+        const bonusBal = parseInt(window.driverData.bonus_balance) || 0;
+
+        const mMax = document.getElementById('modal-max-balance');
+        if (mMax) mMax.textContent = bal.toLocaleString('ru-RU') + ' ₸';
+
+        const mYnd = document.getElementById('modal-yandex-balance');
+        if (mYnd) mYnd.textContent = yandexBal.toLocaleString('ru-RU') + ' ₸';
+
+        const mBon = document.getElementById('modal-bonus-balance');
+        if (mBon) mBon.textContent = bonusBal.toLocaleString('ru-RU') + ' ⭐️';
+    }
+
+    // Render transactions
+    renderTransactions(window.driverTransactions || []);
+
+    document.getElementById('wallet-modal').classList.remove('hidden');
+}
+
+function closeWalletModal() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    document.getElementById('wallet-modal').classList.add('hidden');
+}
+
+function requestWithdraw() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    tg.showConfirm('Запросить вывод всех доступных средств на Kaspi Gold?', (confirmed) => {
+        if (confirmed) {
+            tg.showAlert('Запрос на вывод отправлен диспетчеру. Средства поступят в течение дня.');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            // This is a stub for now, in a real app would call API
+        }
+    });
+}
+
+function renderTransactions(txs) {
+    const container = document.getElementById('wallet-history-container');
+    if (!container) return;
+
+    if (txs.length === 0) {
+        container.innerHTML = '<div style="padding:15px; text-align:center; color:var(--hint-color); font-size:13px;">Нет операций</div>';
+        return;
+    }
+
+    let html = '';
+    txs.forEach(tx => {
+        // Assume tx has: id, type, amount, description, created_at
+        const isPositive = tx.amount > 0;
+        const colorClass = isPositive ? '#4CAF50' : '#ff5252';
+        const sign = isPositive ? '+' : '';
+        const symbol = isPositive ? '+' : '-';
+        const bg = isPositive ? 'rgba(76,175,80,0.1)' : 'rgba(255,82,82,0.1)';
+
+        let dateObj = new Date(tx.created_at + 'Z');
+        let dateStr = dateObj.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        if (dateStr === 'Invalid Date') {
+            dateStr = tx.created_at; // Fallback
+        }
+
+        html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width:30px; height:30px; border-radius:8px; background:${bg}; color:${colorClass}; display:flex; align-items:center; justify-content:center; font-size:16px;">
+                    ${symbol}
+                </div>
+                <div>
+                    <p style="font-size:13px; font-weight:600;">${tx.description || tx.type || 'Операция'}</p>
+                    <p style="font-size:11px; color:var(--hint-color);">${dateStr}</p>
+                </div>
+            </div>
+            <p style="font-size:14px; font-weight:600; color:${colorClass};">${sign}${tx.amount} ₸</p>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+let currentEditOrderId = null;
+function openEditModal(orderId, price, date, time) {
+    currentEditOrderId = orderId;
+    document.getElementById('edit-order-price').value = price || '';
+    document.getElementById('edit-order-date').value = date || '';
+    document.getElementById('edit-order-time').value = time || '';
+    document.getElementById('edit-order-modal').classList.remove('hidden');
+}
+
+document.getElementById('confirm-edit-btn').addEventListener('click', async () => {
+    const price = document.getElementById('edit-order-price').value;
+    const date = document.getElementById('edit-order-date').value;
+    const time = document.getElementById('edit-order-time').value;
+    await fetch('/api/order/' + currentEditOrderId, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caller_id: window.tgData.user.id, price: price ? parseInt(price) : null, date: date || null, time: time || null })
+    });
+    document.getElementById('edit-order-modal').classList.add('hidden');
+    loadOrders();
+});
+
+let currentChatOrderId = null;
+function openChatModal(orderId) {
+    currentChatOrderId = orderId;
+    document.getElementById('chat-message-input').value = '';
+    document.getElementById('chat-driver-modal').classList.remove('hidden');
+}
+document.getElementById('send-chat-btn')?.addEventListener('click', async () => {
+    const msg = document.getElementById('chat-message-input').value;
+    if (!msg) return;
+    try {
+        await fetch('/api/order/' + currentChatOrderId + '/message_driver', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caller_id: window.tgData.user.id, message: msg })
+        });
+        tg.showAlert('Сообщение отправлено водителю!');
+    } catch(e) {}
+    document.getElementById('chat-driver-modal').classList.add('hidden');
+});
+
+async function loadAdminStats() {
+    try {
+        const res = await fetch('/api/admin/stats?caller_id=' + window.tgData.user.id);
+        const data = await res.json();
+        document.getElementById('dash-rev').textContent = (data.revenue || 0).toLocaleString('ru-RU') + ' ₸';
+        document.getElementById('dash-comp').textContent = data.total_completed;
+        document.getElementById('dash-total-ord').textContent = data.total_orders;
+        document.getElementById('dash-drv-on').textContent = data.drivers_online + ' / ' + data.total_drivers;
+    } catch(e) {}
 }

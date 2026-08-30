@@ -62,6 +62,24 @@
                 </div>
 
                 <!-- DISPATCHER VIEW -->
+                    <!-- Admin Dashboard Section -->
+                    <div id="admin-dashboard-section" class="hidden" style="margin-bottom:20px;">
+                        <h3 class="section-title">📊 Аналитика (Admin)</h3>
+                        <div class="wallet-grid">
+                            <div class="glass-card wallet-card" style="padding:15px; margin-bottom:0;">
+                                <p class="wallet-label" style="font-size:11px;">Общая выручка</p>
+                                <h2 id="dash-rev" class="wallet-balance" style="font-size:18px; margin:5px 0;">0 ₸</h2>
+                            </div>
+                            <div class="glass-card wallet-card" style="padding:15px; margin-bottom:0;">
+                                <p class="wallet-label" style="font-size:11px;">Выполнено заказов</p>
+                                <h2 id="dash-comp" class="wallet-balance" style="font-size:18px; margin:5px 0;">0</h2>
+                            </div>
+                        </div>
+                        <div class="glass-card" style="padding:15px; display:flex; justify-content:space-between;">
+                            <div><p style="font-size:11px; color:var(--hint-color); margin:0;">Всего заказов</p><h3 id="dash-total-ord" style="margin:5px 0 0 0;">0</h3></div>
+                            <div style="text-align:right;"><p style="font-size:11px; color:var(--hint-color); margin:0;">Водителей онлайн</p><h3 id="dash-drv-on" style="margin:5px 0 0 0; color:#4CAF50;">0 / 0</h3></div>
+                        </div>
+                    </div>
                 <div id="dispatcher-view" class="role-view hidden">
 
                     <h3 class="section-title">Сводка Диспетчера</h3>
@@ -73,7 +91,7 @@
                                 <p
                                     style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:4px;">
                                     MAX (Трансферы)</p>
-                                <h3 style="font-size:16px;">24 <span
+                                <h3 style="font-size:16px;" id="disp-stat-orders">0 <span
                                         style="font-size:12px; font-weight:normal; color:#4CAF50;">выполнено</span></h3>
                             </div>
                             <div class="stat-box"
@@ -81,7 +99,7 @@
                                 <p
                                     style="font-size:10px; text-transform:uppercase; color:var(--accent-color); margin-bottom:4px;">
                                     Yandex.PRO</p>
-                                <h3 style="font-size:16px;">185 <span
+                                <h3 style="font-size:16px;" id="disp-stat-yandex">0 <span
                                         style="font-size:12px; font-weight:normal; color:#4CAF50;">выполнено</span></h3>
                             </div>
                         </div>
@@ -92,16 +110,16 @@
                                 style="flex:1; background:rgba(255,255,255,0.02); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
                                 <p
                                     style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:4px;">
-                                    План на сегодня</p>
-                                <h3 style="font-size:16px;">8 <span
-                                        style="font-size:12px; font-weight:normal;">назначено</span></h3>
+                                    Всего клиентов</p>
+                                <h3 style="font-size:16px;" id="disp-stat-users">0 <span
+                                        style="font-size:12px; font-weight:normal;">чел.</span></h3>
                             </div>
                             <div class="stat-box"
                                 style="flex:1; background:rgba(255,255,255,0.02); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
                                 <p
                                     style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:4px;">
-                                    Водители в пути</p>
-                                <h3 style="font-size:16px; color:var(--accent-color);">12 <span
+                                    Всего водителей</p>
+                                <h3 style="font-size:16px; color:var(--accent-color);" id="disp-stat-drivers">0 <span
                                         style="font-size:12px; font-weight:normal; color:var(--hint-color);">чел.</span>
                                 </h3>
                             </div>
@@ -130,6 +148,25 @@
 
                 <!-- DRIVER VIEW -->
                 <div id="driver-view" class="role-view hidden">
+                    <div id="driver-yandex-status-block" class="glass-card hidden"
+                        style="margin-bottom: 20px; padding: 15px;">
+                        <h4
+                            style="font-size:12px; color:var(--hint-color); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">
+                            Профиль Yandex.PRO</h4>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <p style="font-size:14px; font-weight:600; margin-bottom: 3px;" id="driver-yandex-car">
+                                    Загрузка авто...</p>
+                                <p style="font-size:12px; margin-bottom: 3px;" id="driver-yandex-work-status">
+                                    Загрузка...</p>
+                                <p style="font-size:11px; color:var(--hint-color);" id="driver-yandex-id"></p>
+                            </div>
+                            <div class="park-badge"
+                                style="background: rgba(244,192,30,0.1); color: var(--accent-color);">Синхронизировано
+                            </div>
+                        </div>
+                    </div>
+
                     <h3 class="section-title">В работе:</h3>
                     <div id="driver-home-orders"></div>
                 </div>
@@ -198,6 +235,23 @@
                             <div class="icon dropoff-icon"></div>
                             <input type="text" id="client-dropoff" placeholder="Куда направляемся?" autocomplete="off">
                         </div>
+
+                        <!-- Быстрые адреса -->
+                        <div
+                            style="display: flex; gap: 8px; margin-top: 12px; margin-left: 35px; overflow-x: auto; padding-bottom: 5px;">
+                            <button onclick="setAddress('Дом')" type="button"
+                                style="background: rgba(255,255,255,0.1); border: none; padding: 6px 12px; border-radius: 20px; color: #fff; font-size: 11px; white-space: nowrap;">🏠
+                                Дом</button>
+                            <button onclick="setAddress('Работа')" type="button"
+                                style="background: rgba(255,255,255,0.1); border: none; padding: 6px 12px; border-radius: 20px; color: #fff; font-size: 11px; white-space: nowrap;">🏢
+                                Работа</button>
+                            <button onclick="setAddress('Аэропорт (NQZ)')" type="button"
+                                style="background: rgba(255,255,255,0.1); border: none; padding: 6px 12px; border-radius: 20px; color: #fff; font-size: 11px; white-space: nowrap;">✈️
+                                Аэропорт (NQZ)</button>
+                            <button onclick="setAddress('Вокзал Нурлы Жол')" type="button"
+                                style="background: rgba(255,255,255,0.1); border: none; padding: 6px 12px; border-radius: 20px; color: #fff; font-size: 11px; white-space: nowrap;">🚆
+                                Вокзал (Нурлы Жол)</button>
+                        </div>
                     </div>
 
                     <!-- Периодичность для Трансфера -->
@@ -265,6 +319,31 @@
                                 <option value="12">12 часов</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- GetTransfer Params (Багаж, Рейс, Табличка) -->
+                    <div class="row-flex" id="block-gettransfer-params">
+                        <div class="glass-card flex-half" style="width: 48%;">
+                            <label class="tiny-label">🧳 Багаж</label>
+                            <select id="client-luggage" class="fancy-select">
+                                <option value="0">Без багажа</option>
+                                <option value="1">1 чемодан</option>
+                                <option value="2">2 чемодана</option>
+                                <option value="3+">3 и более</option>
+                            </select>
+                        </div>
+                        <div class="glass-card flex-half" style="width: 48%;">
+                            <label class="tiny-label">✈️ Номер рейса</label>
+                            <input type="text" id="client-flight" class="fancy-select"
+                                placeholder="KC 852 (Опционально)"
+                                style="border: none; outline:none; background:transparent;" />
+                        </div>
+                    </div>
+                    <div class="glass-card" id="block-meetsign" style="padding:15px; margin-bottom:15px;">
+                        <label class="tiny-label">🪧 Встреча с табличкой</label>
+                        <input type="text" id="client-meet-sign" class="fancy-select"
+                            placeholder="Имя на табличке (Опционально)"
+                            style="border: none; outline:none; background:transparent; width:100%; border-bottom:1px solid rgba(255,255,255,0.1); margin-top:5px;" />
                     </div>
 
                     <!-- Блок обратного пути (Для трансферов) -->
@@ -362,7 +441,8 @@
                                     <circle cx="165" cy="70" r="2" fill="#aaa" />
                                 </svg>
                             </div>
-                            <h3>Эконом</h3>
+                            <h3 style="margin-bottom: 2px;">Эконом</h3>
+                            <p style="font-size: 11px; color: var(--accent-color); margin: 0;">от 1200 ₸</p>
                         </div>
                         <!-- КОМФОРТ — седан, белый -->
                         <div class="car-card" data-class="comfort" data-price="от 1800 ₸">
@@ -432,7 +512,8 @@
                                     <circle cx="182" cy="70" r="2.2" fill="#aaa" />
                                 </svg>
                             </div>
-                            <h3>Комфорт</h3>
+                            <h3 style="margin-bottom: 2px;">Комфорт</h3>
+                            <p style="font-size: 11px; color: var(--accent-color); margin: 0;">от 1800 ₸</p>
                         </div>
                         <!-- БИЗНЕС — длинный седан, чёрный -->
                         <div class="car-card" data-class="business" data-price="от 3500 ₸">
@@ -511,7 +592,8 @@
                                     <circle cx="192" cy="71" r="2.5" fill="#c8aa5a" />
                                 </svg>
                             </div>
-                            <h3>Бизнес</h3>
+                            <h3 style="margin-bottom: 2px;">Бизнес</h3>
+                            <p style="font-size: 11px; color: var(--accent-color); margin: 0;">от 3500 ₸</p>
                         </div>
                         <!-- МИНИВЭН — высокий кузов, тёмно-синий -->
                         <div class="car-card" data-class="minivan" data-price="от 5000 ₸">
@@ -588,358 +670,392 @@
                                     <circle cx="180" cy="80" r="2.5" fill="#aaa" />
                                 </svg>
                             </div>
-                            <h3>Минивэн</h3>
+                            <h3 style="margin-bottom: 2px;">Минивэн</h3>
+                            <p style="font-size: 11px; color: var(--accent-color); margin: 0;">от 5000 ₸</p>
                         </div>
                     </div>
-
-                    <!-- Способ оплаты -->
-                    <div class="glass-card"
-                        style="padding:12px 15px; margin-top:10px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background: rgba(255,255,255,0.03);"
-                        onclick="openPaymentModal()">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:20px;" id="selected-payment-icon">💳</span>
-                            <div>
-                                <p
-                                    style="font-size:11px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">
-                                    Способ оплаты</p>
-                                <h3 style="font-size:14px; margin:0;" id="selected-payment-text">Kaspi Gold (*4512)</h3>
-                            </div>
-                        </div>
-                        <span style="color:var(--hint-color); font-size: 20px;">›</span>
-                    </div>
-
-                    <!-- Комментарий -->
-                    <div class="glass-card comment-card" style="margin-top: 5px;">
-                        <input type="text" id="client-comment" placeholder="Дополнения (дет. кресло, много багажа)"
-                            autocomplete="off">
-                    </div>
-
-                    <button id="client-order-btn" class="primary-btn pulse-btn"
-                        style="margin-top:20px; transition: 0.3s" disabled>Заказать трансфер</button>
-                    <p style="font-size: 11px; color: var(--hint-color); text-align: center; margin-top: 10px;">
-                        Продолжая, вы соглашаетесь с условиями оферты</p>
-                </div>
-            </div>
-
-            <!-- 2. RIDES TAB (Поездки) -->
-            <div id="tab-rides" class="tab-content hidden">
-                <h3 class="section-title">Ваша история поездок</h3>
-                <div id="active-orders-container" style="margin-bottom: 20px;">
-                    <!-- Будет заполняться из JS -->
                 </div>
 
-                <!-- DRIVER BLOCK: Статистика заработка (Скрыто по умолчанию) -->
-                <div id="driver-stats-container" class="hidden">
-                    <h3 class="section-title">Ваш доход (Статистика)</h3>
-                    <div class="row-flex" style="gap:10px; margin-bottom: 15px;">
-
-                        <!-- За последние сутки -->
-                        <div class="glass-card flex-half"
-                            style="width: 50%; padding:15px; margin:0; display:flex; flex-direction:column; justify-content:space-between; border-color: rgba(244,192,30,0.3);">
-                            <h4
-                                style="font-size:12px; color:var(--hint-color); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
-                                За сутки (Выполнено)</h4>
-
-                            <div style="margin-bottom:10px;">
-                                <p style="font-size:12px; margin-bottom:2px;">Трансферы (<b>3</b>)</p>
-                                <p style="font-size:13px; color:var(--accent-color); font-weight:600;">18 500 ₸</p>
-                            </div>
-
-                            <div style="margin-bottom:15px;">
-                                <p style="font-size:12px; margin-bottom:2px;">Яндекс.PRO (<b>12</b>)</p>
-                                <p style="font-size:13px; color:var(--accent-color); font-weight:600;">12 400 ₸</p>
-                            </div>
-
-                            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
-                                <p
-                                    style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">
-                                    Общая сумма:</p>
-                                <h3 style="font-size:18px; font-weight:700;">30 900 ₸</h3>
-                            </div>
-                        </div>
-
-                        <!-- На предстоящие сутки -->
-                        <div class="glass-card flex-half"
-                            style="width: 50%; padding:15px; margin:0; display:flex; flex-direction:column; justify-content:space-between; background: rgba(255,255,255,0.02);">
-                            <h4
-                                style="font-size:12px; color:var(--hint-color); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
-                                Впереди (Планы)</h4>
-
-                            <div style="margin-bottom:10px;">
-                                <p style="font-size:12px; margin-bottom:2px;">Трансферы (<b>2</b>)</p>
-                                <p style="font-size:13px; color:var(--accent-color); font-weight:600;">12 000 ₸</p>
-                            </div>
-
-                            <!-- Spacer for vertical alignment with the first block -->
-                            <div style="flex-grow:1;"></div>
-
-                            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
-                                <p
-                                    style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">
-                                    Ожидаемый доход:</p>
-                                <h3 style="font-size:18px; font-weight:700;">12 000 ₸</h3>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. PROFILE / SETTINGS TAB (Профиль) -->
-            <div id="tab-profile" class="tab-content hidden">
+                <!-- Способ оплаты -->
                 <div class="glass-card"
-                    style="padding:15px; margin-bottom:15px; display:flex; align-items:center; gap:15px;">
-                    <div id="profile-avatar-large"
-                        style="width:50px; height:50px; border-radius:50%; background:var(--accent-color); font-size:24px; display:flex; align-items:center; justify-content:center;">
-                        👤</div>
-                    <div>
-                        <h3 id="profile-name-large" style="margin:0; font-size:16px;">Пользователь</h3>
-                        <p id="profile-role-large"
-                            style="color:rgba(255,255,255,0.7); font-size:12px; margin:2px 0 0 0;">Статус</p>
-                    </div>
-                </div>
-
-                <h3 class="section-title">Финансы</h3>
-                <div id="profile-finance-driver" class="hidden">
-                    <button class="primary-btn pulse-btn" onclick="openWalletModal()"
-                        style="margin-bottom:15px; width:100%;">💸 Мой кошелек (Баланс и Вывод)</button>
-                </div>
-                <div id="profile-finance-client" class="hidden">
-                    <button class="primary-btn alt-btn" onclick="openPaymentModal()"
-                        style="margin-bottom:15px; width:100%; border-color:var(--accent-color); color:var(--accent-color);">💳
-                        Мои карты и способы оплаты</button>
-                </div>
-                <div id="profile-finance-admin" class="hidden">
-                    <button class="primary-btn"
-                        onclick="tg.showAlert('Для получения отчета за месяц отправьте команду /report боту Управления')"
-                        style="margin-bottom:15px; width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.1); color:var(--text-color);">📊
-                        Выгрузить финансовый отчет</button>
-                </div>
-
-                <h3 class="section-title">Настройки</h3>
-                <div class="glass-card profile-menu">
-                    <div class="menu-item" onclick="document.querySelector('[data-tab=\'tab-rides\']').click();">
-                        <div class="menu-left">
-                            <span class="menu-icon">🚗</span>
-                            <span>История поездок</span>
+                    style="padding:12px 15px; margin-top:10px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background: rgba(255,255,255,0.03);"
+                    onclick="openPaymentModal()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;" id="selected-payment-icon">💳</span>
+                        <div>
+                            <p
+                                style="font-size:11px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">
+                                Способ оплаты</p>
+                            <h3 style="font-size:14px; margin:0;" id="selected-payment-text">Kaspi Gold (*4512)</h3>
                         </div>
-                        <span class="menu-arrow">›</span>
                     </div>
-                    <div class="menu-item"
-                        onclick="tg.showAlert('Язык приложения будет добавлен в следующем обновлении')">
-                        <div class="menu-left">
-                            <span class="menu-icon">🌐</span>
-                            <span>Язык приложения</span>
-                        </div>
-                        <span class="menu-value">Русский</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- BOTTOM NAVIGATION BAR -->
-        <nav class="bottom-nav hidden" id="bottom-nav">
-            <div class="nav-item active" data-tab="tab-home">
-                <div class="nav-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="svg-icon">
-                        <path
-                            d="M10.1983 23V16.3268C10.1983 15.6888 10.7416 15.176 11.4118 15.176H13.7915C14.4617 15.176 15.005 15.6888 15.005 16.3268V23C15.005 23.5134 15.4485 23.9317 15.995 23.9317H20.0984C20.6449 23.9317 21.0884 23.5134 21.0884 23.0001V12.0232C21.0884 11.6669 20.9169 11.3323 20.6277 11.1275L13.1119 5.80775C12.7852 5.5764 12.3382 5.56847 12.0028 5.79093L4.54228 10.74C4.19777 10.9686 3.993 11.3655 3.993 11.7766C3.993 11.8385 3.99321 11.9009 3.99368 11.9628L4.56891 22.9397C4.59765 23.4878 5.06834 23.9213 5.6262 23.9213H9.20815C9.75466 23.9213 10.1983 23.5029 10.1983 22.9896V23Z"
-                            fill="currentColor" />
-                    </svg>
-                </div>
-                <span>Главная</span>
-            </div>
-            <div class="nav-item" data-tab="tab-rides">
-                <div class="nav-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="svg-icon">
-                        <path
-                            d="M19 14.5C19 15.3284 18.3284 16 17.5 16C16.6716 16 16 15.3284 16 14.5C16 13.6716 16.6716 13 17.5 13C18.3284 13 19 13.6716 19 14.5ZM7.5 16C8.32843 16 9 15.3284 9 14.5C9 13.6716 8.32843 13 7.5 13C6.67157 13 6 13.6716 6 14.5C6 15.3284 6.67157 16 7.5 16Z"
-                            fill="currentColor" />
-                        <path fill-rule="evenodd" clip-rule="evenodd"
-                            d="M18.8953 3.63001L21.7248 10.2974H21C22.6569 10.2974 24 11.6405 24 13.2974V18.1565C24 18.7088 23.5523 19.1565 23 19.1565C22.4477 19.1565 22 18.7088 22 18.1565V17.2974H3V18.1565C3 18.7088 2.55228 19.1565 2 19.1565C1.44772 19.1565 1 18.7088 1 18.1565V13.2974C1 11.6405 2.34315 10.2974 4 10.2974H3.25055L6.15579 3.59374C6.55998 2.66107 7.47352 2.05284 8.49071 2.05284H16.5186C17.5453 2.05284 18.4657 2.67117 18.8953 3.63001ZM17.1594 10.2974L15.3375 6.04683C15.1764 5.67104 14.8082 5.42398 14.3975 5.42398H10.6014C10.1837 5.42398 9.81057 5.67751 9.65426 6.0617L8.03195 10.2974H17.1594ZM3 13.2974C3 12.7451 3.44772 12.2974 4 12.2974H21C21.5523 12.2974 22 12.7451 22 13.2974V15.2974H3V13.2974Z"
-                            fill="currentColor" />
-                    </svg>
-                </div>
-                <span>Поездки</span>
-            </div>
-            <div class="nav-item" data-tab="tab-profile">
-                <div class="nav-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="svg-icon">
-                        <path fill-rule="evenodd" clip-rule="evenodd"
-                            d="M12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2ZM9 7C9 5.34315 10.3431 4 12 4C13.6569 4 15 5.34315 15 7C15 8.65685 13.6569 10 12 10C10.3431 10 9 8.65685 9 7Z"
-                            fill="currentColor" />
-                        <path fill-rule="evenodd" clip-rule="evenodd"
-                            d="M12 13.5C7.30558 13.5 3.5 17.3056 3.5 22C3.5 22.5523 3.94772 23 4.5 23H19.5C20.0523 23 20.5 22.5523 20.5 22C20.5 17.3056 16.6944 13.5 12 13.5ZM5.52732 21C6.01254 17.6591 8.78493 15.5 12 15.5C15.2151 15.5 17.9875 17.6591 18.4727 21H5.52732Z"
-                            fill="currentColor" />
-                    </svg>
-                </div>
-                <span>Профиль</span>
-            </div>
-        </nav>
-
-        <!-- MANAGE DRIVER BALANCE MODAL -->
-        <div id="manage-driver-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 class="section-title" style="margin-bottom:0;" id="manage-driver-name">Управление балансом</h3>
-                    <button
-                        style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;"
-                        onclick="closeManageDriverModal()">&times;</button>
+                    <span style="color:var(--hint-color); font-size: 20px;">›</span>
                 </div>
 
-                <div class="glass-card wallet-card" style="margin-bottom:20px; padding:20px; text-align:center;">
-                    <p class="wallet-label">Текущий баланс</p>
-                    <h2 class="wallet-balance" id="manage-driver-balance" style="font-size:28px; margin:5px 0;">0 ₸</h2>
-                </div>
-
-                <div class="input-wrapper" style="margin-bottom:10px;">
-                    <input type="number" id="manage-amount" placeholder="Сумма (например: 1500 или -500)"
-                        autocomplete="off">
-                    <span class="currency">₸</span>
-                </div>
-                <div class="input-wrapper" style="margin-bottom:20px;">
-                    <input type="text" id="manage-desc" placeholder="Причина (например: Ручное пополнение)"
+                <!-- Комментарий -->
+                <div class="glass-card comment-card" style="margin-top: 5px;">
+                    <input type="text" id="client-comment" placeholder="Дополнения (дет. кресло, много багажа)"
                         autocomplete="off">
                 </div>
-                <button class="primary-btn pulse-btn" id="manage-driver-btn" onclick="submitDriverBalance()">Подтвердить
-                    изменение</button>
+
+                <button id="client-order-btn" class="primary-btn pulse-btn" style="margin-top:20px; transition: 0.3s"
+                    disabled>Заказать трансфер</button>
+                <p style="font-size: 11px; color: var(--hint-color); text-align: center; margin-top: 10px;">
+                    Продолжая, вы соглашаетесь с условиями оферты</p>
             </div>
         </div>
 
-        <!-- PAYMENT METHODS MODAL -->
-        <div id="payment-modal" class="modal-overlay hidden">
-            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 class="section-title" style="margin-bottom:0;">Способы оплаты</h3>
-                    <button
-                        style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;"
-                        onclick="closePaymentModal()">&times;</button>
-                </div>
-
-                <div class="glass-card payment-option"
-                    style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px; border: 1px solid var(--accent-color); cursor:pointer;"
-                    onclick="selectPayment(this, 'Kaspi Gold (*4512)', '💳')">
-                    <span style="font-size:22px;">💳</span>
-                    <div style="flex-grow:1;">
-                        <p style="font-size:14px; font-weight:600; margin:0;">Kaspi Gold</p>
-                        <p style="font-size:12px; color:var(--hint-color); margin:0;">**** 4512</p>
-                    </div>
-                    <span style="color:var(--accent-color); font-size:18px;">✅</span>
-                </div>
-
-                <div class="glass-card payment-option"
-                    style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px; cursor:pointer;"
-                    onclick="selectPayment(this, 'Наличные', '💵')">
-                    <span style="font-size:22px;">��</span>
-                    <div style="flex-grow:1;">
-                        <p style="font-size:14px; font-weight:600; margin:0;">Наличные</p>
-                        <p style="font-size:12px; color:var(--hint-color); margin:0;">Оплата водителю</p>
-                    </div>
-                </div>
-
-                <button class="primary-btn alt-btn" style="margin-top:15px;" onclick="simulateAddCard()">+ Привязать
-                    новую карту (Apple/Google Pay)</button>
-                <p style="font-size: 11px; color: var(--hint-color); text-align: center; margin-top: 15px;">Заказы будут
-                    оплачиваться автоматически по завершению поездки</p>
+        <!-- 2. RIDES TAB (Поездки) -->
+        <div id="tab-rides" class="tab-content hidden">
+            <h3 class="section-title">Активные поездки</h3>
+            <div id="active-orders-container" style="margin-bottom: 20px;">
+                <!-- Будет заполняться из JS -->
             </div>
-        </div>
 
-        <!-- WALLET / FINANCE MODAL -->
-        <div id="wallet-modal" class="modal-overlay hidden">
-            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 class="section-title" style="margin-bottom:0;">Кошелек и Финансы</h3>
-                    <button
-                        style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;"
-                        onclick="closeWalletModal()">&times;</button>
-                </div>
+            <h3 class="section-title">История поездок</h3>
+            <div id="history-orders-container" style="margin-bottom: 20px;">
+                <!-- Будет заполняться из JS -->
+            </div>
 
-                <button class="primary-btn pulse-btn" style="margin-bottom: 20px;" onclick="requestWithdraw()">💸
-                    ВЫВЕСТИ НА КАРТУ</button>
+            <!-- DRIVER BLOCK: Статистика заработка (Скрыто по умолчанию) -->
+            <div id="driver-stats-container" class="hidden">
+                <h3 class="section-title">Ваш доход (Статистика)</h3>
+                <div class="row-flex" style="gap:10px; margin-bottom: 15px;">
 
-                <!-- Баланс и бонусы -->
-                <div class="wallet-grid" style="margin-bottom:20px;">
-                    <div class="glass-card wallet-card" style="margin-bottom:0; padding:15px;">
-                        <p class="wallet-label" style="font-size:11px;">Доступно к выводу</p>
-                        <h2 class="wallet-balance" id="modal-balance" style="font-size:22px; margin:5px 0;">0 ₸</h2>
-                    </div>
-                    <div class="glass-card wallet-card"
-                        style="margin-bottom:0; padding:15px; background: linear-gradient(135deg, rgba(244,192,30,0.1), rgba(244,192,30,0.02)); border-color: rgba(244,192,30,0.3);">
-                        <p class="wallet-label" style="color: var(--accent-color); font-size:11px;">MAX Бонусы</p>
-                        <h2 class="wallet-balance" style="font-size:22px; margin:5px 0;">150 ⭐️</h2>
-                    </div>
-                </div>
+                    <!-- За последние сутки -->
+                    <div class="glass-card flex-half"
+                        style="width: 50%; padding:15px; margin:0; display:flex; flex-direction:column; justify-content:space-between; border-color: rgba(244,192,30,0.3);">
+                        <h4
+                            style="font-size:12px; color:var(--hint-color); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
+                            За сутки (Выполнено)</h4>
 
-                <!-- Cards -->
-                <h3 class="section-title" style="font-size:14px; margin-bottom:10px;">Мои карты</h3>
-                <div class="glass-card" style="padding:15px; margin-bottom:20px;">
-                    <div
-                        style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:10px;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:20px;">💳</span>
-                            <div>
-                                <p style="font-size:13px; font-weight:600;">Kaspi Gold</p>
-                                <p style="font-size:11px; color:var(--hint-color);">**** 4512</p>
-                            </div>
+                        <div style="margin-bottom:10px;">
+                            <p style="font-size:12px; margin-bottom:2px;">Трансферы (<b>3</b>)</p>
+                            <p style="font-size:13px; color:var(--accent-color); font-weight:600;">18 500 ₸</p>
+                        </div>
+
+                        <div style="margin-bottom:15px;">
+                            <p style="font-size:12px; margin-bottom:2px;">Яндекс.PRO (<b>12</b>)</p>
+                            <p style="font-size:13px; color:var(--accent-color); font-weight:600;">12 400 ₸</p>
+                        </div>
+
+                        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                            <p
+                                style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">
+                                Общая сумма:</p>
+                            <h3 style="font-size:18px; font-weight:700;">30 900 ₸</h3>
                         </div>
                     </div>
-                    <button class="primary-btn alt-btn" style="padding:8px; font-size:13px; width:100%;"
-                        onclick="tg.showAlert('Привязка новой карты будет доступна в следующем обновлении')">+ Привязать
-                        новую карту</button>
-                </div>
 
-                <!-- History -->
-                <h3 class="section-title" style="font-size:14px; margin-bottom:10px;">История операций</h3>
-                <div class="glass-card" style="padding:0; overflow:hidden; margin-bottom: 20px;">
-                    <div
-                        style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <div
-                                style="width:30px; height:30px; border-radius:8px; background:rgba(76,175,80,0.1); color:#4CAF50; display:flex; align-items:center; justify-content:center; font-size:16px;">
-                                +</div>
-                            <div>
-                                <p style="font-size:13px; font-weight:600;">Пополнение (Трансфер)</p>
-                                <p style="font-size:11px; color:var(--hint-color);">Сегодня</p>
-                            </div>
+                    <!-- На предстоящие сутки -->
+                    <div class="glass-card flex-half"
+                        style="width: 50%; padding:15px; margin:0; display:flex; flex-direction:column; justify-content:space-between; background: rgba(255,255,255,0.02);">
+                        <h4
+                            style="font-size:12px; color:var(--hint-color); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">
+                            Впереди (Планы)</h4>
+
+                        <div style="margin-bottom:10px;">
+                            <p style="font-size:12px; margin-bottom:2px;">Трансферы (<b>2</b>)</p>
+                            <p style="font-size:13px; color:var(--accent-color); font-weight:600;">12 000 ₸</p>
                         </div>
-                        <p style="font-size:14px; font-weight:600; color:#4CAF50;">+12 750 ₸</p>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 15px;">
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <div
-                                style="width:30px; height:30px; border-radius:8px; background:rgba(255,82,82,0.1); color:#ff5252; display:flex; align-items:center; justify-content:center; font-size:16px;">
-                                -</div>
-                            <div>
-                                <p style="font-size:13px; font-weight:600;">Комиссия банка/парка</p>
-                                <p style="font-size:11px; color:var(--hint-color);">Сегодня</p>
-                            </div>
+
+                        <!-- Spacer for vertical alignment with the first block -->
+                        <div style="flex-grow:1;"></div>
+
+                        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                            <p
+                                style="font-size:10px; text-transform:uppercase; color:var(--hint-color); margin-bottom:2px;">
+                                Ожидаемый доход:</p>
+                            <h3 style="font-size:18px; font-weight:700;">12 000 ₸</h3>
                         </div>
-                        <p style="font-size:14px; font-weight:600; color:#ff5252;">-750 ₸</p>
                     </div>
+
                 </div>
             </div>
         </div>
 
-        <!-- DISPATCHER ASSIGN DRIVER MODAL -->
-        <div id="assign-driver-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h3 class="section-title">Назначить водителя</h3>
-                <p style="font-size:12px; color:var(--hint-color); margin-bottom:15px;">Выберите исполнителя на рейс.
-                </p>
-
-                <div id="driver-list-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
-                    <!-- Filled via JS -->
+        <!-- 3. PROFILE / SETTINGS TAB (Профиль) -->
+        <div id="tab-profile" class="tab-content hidden">
+            <div class="glass-card"
+                style="padding:15px; margin-bottom:15px; display:flex; align-items:center; gap:15px;">
+                <img id="profile-avatar-large" class="avatar" src="" alt="Avatar"
+                    style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+                <div>
+                    <h3 id="profile-name-large" style="margin:0; font-size:16px;">Пользователь</h3>
+                    <p id="profile-role-large" style="color:rgba(255,255,255,0.7); font-size:12px; margin:2px 0 0 0;">
+                        Статус</p>
                 </div>
+            </div>
 
-                <div class="row-flex" style="gap:10px;">
-                    <button class="primary-btn alt-btn flex-half" onclick="closeAssignModal()">Отмена</button>
-                    <button class="primary-btn flex-half pulse-btn" id="confirm-assign-btn">Назначить</button>
+            <h3 class="section-title">Финансы</h3>
+            <div id="profile-finance-driver" class="hidden">
+                <button class="primary-btn pulse-btn" onclick="openWalletModal()"
+                    style="margin-bottom:15px; width:100%;">💸 Мой кошелек (Баланс и Вывод)</button>
+            </div>
+            <div id="profile-finance-client" class="hidden">
+                <button class="primary-btn alt-btn" onclick="openPaymentModal()"
+                    style="margin-bottom:15px; width:100%; border-color:var(--accent-color); color:var(--accent-color);">💳
+                    Мои карты и способы оплаты</button>
+            </div>
+            <div id="profile-finance-admin" class="hidden">
+                <button class="primary-btn"
+                    onclick="tg.showAlert('Для получения отчета за месяц отправьте команду /report боту Управления')"
+                    style="margin-bottom:15px; width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.1); color:var(--text-color);">📊
+                    Выгрузить финансовый отчет</button>
+            </div>
+
+            <h3 class="section-title">Настройки</h3>
+            <div class="glass-card profile-menu">
+                <div class="menu-item" onclick="document.querySelector('[data-tab=\'tab-rides\']').click();">
+                    <div class="menu-left">
+                        <span class="menu-icon">🚗</span>
+                        <span>История поездок</span>
+                    </div>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" onclick="tg.showAlert('Язык приложения будет добавлен в следующем обновлении')">
+                    <div class="menu-left">
+                        <span class="menu-icon">🌐</span>
+                        <span>Язык приложения</span>
+                    </div>
+                    <span class="menu-value">Русский</span>
                 </div>
             </div>
         </div>
+    </div>
 
-        <script src="app.js?v=41"></script>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav hidden" id="bottom-nav">
+        <div class="nav-item active" data-tab="tab-home">
+            <div class="nav-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="svg-icon">
+                    <path
+                        d="M10.1983 23V16.3268C10.1983 15.6888 10.7416 15.176 11.4118 15.176H13.7915C14.4617 15.176 15.005 15.6888 15.005 16.3268V23C15.005 23.5134 15.4485 23.9317 15.995 23.9317H20.0984C20.6449 23.9317 21.0884 23.5134 21.0884 23.0001V12.0232C21.0884 11.6669 20.9169 11.3323 20.6277 11.1275L13.1119 5.80775C12.7852 5.5764 12.3382 5.56847 12.0028 5.79093L4.54228 10.74C4.19777 10.9686 3.993 11.3655 3.993 11.7766C3.993 11.8385 3.99321 11.9009 3.99368 11.9628L4.56891 22.9397C4.59765 23.4878 5.06834 23.9213 5.6262 23.9213H9.20815C9.75466 23.9213 10.1983 23.5029 10.1983 22.9896V23Z"
+                        fill="currentColor" />
+                </svg>
+            </div>
+            <span>Главная</span>
+        </div>
+        <div class="nav-item" data-tab="tab-rides">
+            <div class="nav-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="svg-icon">
+                    <path
+                        d="M19 14.5C19 15.3284 18.3284 16 17.5 16C16.6716 16 16 15.3284 16 14.5C16 13.6716 16.6716 13 17.5 13C18.3284 13 19 13.6716 19 14.5ZM7.5 16C8.32843 16 9 15.3284 9 14.5C9 13.6716 8.32843 13 7.5 13C6.67157 13 6 13.6716 6 14.5C6 15.3284 6.67157 16 7.5 16Z"
+                        fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M18.8953 3.63001L21.7248 10.2974H21C22.6569 10.2974 24 11.6405 24 13.2974V18.1565C24 18.7088 23.5523 19.1565 23 19.1565C22.4477 19.1565 22 18.7088 22 18.1565V17.2974H3V18.1565C3 18.7088 2.55228 19.1565 2 19.1565C1.44772 19.1565 1 18.7088 1 18.1565V13.2974C1 11.6405 2.34315 10.2974 4 10.2974H3.25055L6.15579 3.59374C6.55998 2.66107 7.47352 2.05284 8.49071 2.05284H16.5186C17.5453 2.05284 18.4657 2.67117 18.8953 3.63001ZM17.1594 10.2974L15.3375 6.04683C15.1764 5.67104 14.8082 5.42398 14.3975 5.42398H10.6014C10.1837 5.42398 9.81057 5.67751 9.65426 6.0617L8.03195 10.2974H17.1594ZM3 13.2974C3 12.7451 3.44772 12.2974 4 12.2974H21C21.5523 12.2974 22 12.7451 22 13.2974V15.2974H3V13.2974Z"
+                        fill="currentColor" />
+                </svg>
+            </div>
+            <span>Поездки</span>
+        </div>
+        <div class="nav-item" data-tab="tab-profile">
+            <div class="nav-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="svg-icon">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2ZM9 7C9 5.34315 10.3431 4 12 4C13.6569 4 15 5.34315 15 7C15 8.65685 13.6569 10 12 10C10.3431 10 9 8.65685 9 7Z"
+                        fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M12 13.5C7.30558 13.5 3.5 17.3056 3.5 22C3.5 22.5523 3.94772 23 4.5 23H19.5C20.0523 23 20.5 22.5523 20.5 22C20.5 17.3056 16.6944 13.5 12 13.5ZM5.52732 21C6.01254 17.6591 8.78493 15.5 12 15.5C15.2151 15.5 17.9875 17.6591 18.4727 21H5.52732Z"
+                        fill="currentColor" />
+                </svg>
+            </div>
+            <span>Профиль</span>
+        </div>
+    </nav>
+
+    <!-- MANAGE DRIVER BALANCE MODAL -->
+    <div id="manage-driver-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 class="section-title" style="margin-bottom:0;" id="manage-driver-name">Управление балансом</h3>
+                <button style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;"
+                    onclick="closeManageDriverModal()">&times;</button>
+            </div>
+
+            <div class="glass-card wallet-card" style="margin-bottom:20px; padding:20px; text-align:center;">
+                <p class="wallet-label">Текущий баланс</p>
+                <h2 class="wallet-balance" id="manage-driver-balance" style="font-size:28px; margin:5px 0;">0 ₸</h2>
+            </div>
+
+            <div class="input-wrapper" style="margin-bottom:10px;">
+                <input type="number" id="manage-amount" placeholder="Сумма (например: 1500 или -500)"
+                    autocomplete="off">
+                <span class="currency">₸</span>
+            </div>
+            <div class="input-wrapper" style="margin-bottom:20px;">
+                <input type="text" id="manage-desc" placeholder="Причина (например: Ручное пополнение)"
+                    autocomplete="off">
+            </div>
+            <button class="primary-btn pulse-btn" id="manage-driver-btn" onclick="submitDriverBalance()">Подтвердить
+                изменение</button>
+        </div>
+    </div>
+
+    <!-- PAYMENT METHODS MODAL -->
+    <div id="payment-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 class="section-title" style="margin-bottom:0;">Способы оплаты</h3>
+                <button style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;"
+                    onclick="closePaymentModal()">&times;</button>
+            </div>
+
+            <div class="glass-card payment-option"
+                style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px; border: 1px solid var(--accent-color); cursor:pointer;"
+                onclick="selectPayment(this, 'Kaspi Gold (*4512)', '💳')">
+                <span style="font-size:22px;">💳</span>
+                <div style="flex-grow:1;">
+                    <p style="font-size:14px; font-weight:600; margin:0;">Kaspi Gold</p>
+                    <p style="font-size:12px; color:var(--hint-color); margin:0;">**** 4512</p>
+                </div>
+                <span style="color:var(--accent-color); font-size:18px;">✅</span>
+            </div>
+
+            <div class="glass-card payment-option"
+                style="padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px; cursor:pointer;"
+                onclick="selectPayment(this, 'Наличные', '💵')">
+                <span style="font-size:22px;">��</span>
+                <div style="flex-grow:1;">
+                    <p style="font-size:14px; font-weight:600; margin:0;">Наличные</p>
+                    <p style="font-size:12px; color:var(--hint-color); margin:0;">Оплата водителю</p>
+                </div>
+            </div>
+
+            <button class="primary-btn alt-btn" style="margin-top:15px;" onclick="simulateAddCard()">+ Привязать
+                новую карту (Apple/Google Pay)</button>
+            <p style="font-size: 11px; color: var(--hint-color); text-align: center; margin-top: 15px;">Заказы будут
+                оплачиваться автоматически по завершению поездки</p>
+        </div>
+    </div>
+
+    <!-- WALLET / FINANCE MODAL -->
+    <div id="wallet-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 class="section-title" style="margin-bottom:0;">Кошелек и Финансы</h3>
+                <button style="background:none; border:none; color:var(--hint-color); font-size:24px; cursor:pointer;"
+                    onclick="closeWalletModal()">&times;</button>
+            </div>
+
+            <button class="primary-btn pulse-btn" style="margin-bottom: 20px;" onclick="requestWithdraw()">💸
+                ВЫВЕСТИ НА КАРТУ</button>
+
+            <!-- Баланс и бонусы -->
+            <div class="wallet-grid" style="margin-bottom:20px;">
+                <div class="glass-card wallet-card"
+                    style="margin-bottom:0; padding:15px; border-color: rgba(255,255,255,0.1);">
+                    <p class="wallet-label" style="font-size:11px;">Счет в Таксопарке MAX</p>
+                    <h2 class="wallet-balance" id="modal-max-balance" style="font-size:22px; margin:5px 0;">0 ₸</h2>
+                </div>
+                <div class="glass-card wallet-card"
+                    style="margin-bottom:0; padding:15px; background: linear-gradient(135deg, rgba(235, 33, 46, 0.1), rgba(235, 33, 46, 0.02)); border-color: rgba(235, 33, 46, 0.3);">
+                    <p class="wallet-label" style="color: #ff5252; font-size:11px;">Счет Яндекс.Про</p>
+                    <h2 class="wallet-balance" id="modal-yandex-balance"
+                        style="font-size:22px; margin:5px 0; color: #ff5252;">0 ₸</h2>
+                </div>
+                <div class="glass-card wallet-card"
+                    style="margin-bottom:0; padding:15px; background: linear-gradient(135deg, rgba(244,192,30,0.1), rgba(244,192,30,0.02)); border-color: rgba(244,192,30,0.3); grid-column: span 2;">
+                    <p class="wallet-label" style="color: var(--accent-color); font-size:11px;">MAX Бонусы</p>
+                    <h2 class="wallet-balance" id="modal-bonus-balance" style="font-size:22px; margin:5px 0;">0 ⭐️</h2>
+                </div>
+            </div>
+
+            <!-- Cards -->
+            <h3 class="section-title" style="font-size:14px; margin-bottom:10px;">Мои карты</h3>
+            <div class="glass-card" style="padding:15px; margin-bottom:20px;">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">💳</span>
+                        <div>
+                            <p style="font-size:13px; font-weight:600;">Kaspi Gold</p>
+                            <p style="font-size:11px; color:var(--hint-color);">**** 4512</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="primary-btn alt-btn" style="padding:8px; font-size:13px; width:100%;"
+                    onclick="tg.showAlert('Привязка новой карты будет доступна в следующем обновлении')">+ Привязать
+                    новую карту</button>
+            </div>
+
+            <!-- History -->
+            <h3 class="section-title" style="font-size:14px; margin-bottom:10px;">История операций</h3>
+            <div class="glass-card" id="wallet-history-container"
+                style="padding:0; overflow:hidden; margin-bottom: 20px;">
+                <!-- Заполняется из JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- DISPATCHER ASSIGN DRIVER MODAL -->
+    <div id="assign-driver-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="section-title">Назначить водителя</h3>
+            <p style="font-size:12px; color:var(--hint-color); margin-bottom:15px;">Выберите исполнителя на рейс.
+            </p>
+
+            <div id="driver-list-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+                <!-- Filled via JS -->
+            </div>
+
+            <div class="row-flex" style="gap:10px;">
+                <button class="primary-btn alt-btn flex-half" onclick="closeAssignModal()">Отмена</button>
+                <button class="primary-btn flex-half pulse-btn" id="confirm-assign-btn">Назначить</button>
+            </div>
+        </div>
+    </div>
+        <!-- DISPATCHER CHAT MODAL -->
+    <div id="chat-driver-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="section-title">Сообщение водителю</h3>
+            
+            <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;">
+                <button class="primary-btn alt-btn" style="font-size:11px; padding:6px; flex:1;" onclick="document.getElementById('chat-message-input').value='Где ты находишься?'">Где ты?</button>
+                <button class="primary-btn alt-btn" style="font-size:11px; padding:6px; flex:1;" onclick="document.getElementById('chat-message-input').value='Поторопись, клиент ждет!'">Поторопись</button>
+                <button class="primary-btn alt-btn" style="font-size:11px; padding:6px; flex:1;" onclick="document.getElementById('chat-message-input').value='Помой машину перед подачей.'">Помой авто</button>
+            </div>
+            
+            <textarea id="chat-message-input" class="fancy-select" rows="3" placeholder="Введите сообщение..." style="width:100%; border-radius:10px; margin-bottom:10px;"></textarea>
+            
+            <div class="row-flex" style="gap:10px;">
+                <button class="primary-btn alt-btn flex-half" onclick="document.getElementById('chat-driver-modal').classList.add('hidden')">Отмена</button>
+                <button class="primary-btn flex-half pulse-btn" id="send-chat-btn">Отправить</button>
+            </div>
+        </div>
+    </div>
+    <!-- DISPATCHER ORDER EDIT MODAL -->
+    <div id="edit-order-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="section-title">Редактирование заказа</h3>
+            <p style="font-size:12px; color:var(--hint-color); margin-bottom:15px;">Измените данные, если договорились с
+                клиентом.</p>
+
+            <div class="glass-card" style="padding:10px; margin-bottom:10px;">
+                <label class="tiny-label">Стоимость (Цена для клиента) ₸</label>
+                <input type="number" id="edit-order-price" class="fancy-select" placeholder="Например: 5000">
+            </div>
+
+            <div class="glass-card" style="padding:10px; margin-bottom:10px;">
+                <label class="tiny-label">Дата (Новая)</label>
+                <input type="date" id="edit-order-date" class="fancy-select">
+            </div>
+
+            <div class="glass-card" style="padding:10px; margin-bottom:15px;">
+                <label class="tiny-label">Время (Новое)</label>
+                <input type="time" id="edit-order-time" class="fancy-select">
+            </div>
+
+            <div class="row-flex" style="gap:10px;">
+                <button class="primary-btn alt-btn flex-half"
+                    onclick="document.getElementById('edit-order-modal').classList.add('hidden')">Отмена</button>
+                <button class="primary-btn flex-half pulse-btn" id="confirm-edit-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=45"></script>
 </body>
 
 </html>
