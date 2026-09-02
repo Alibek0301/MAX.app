@@ -19,13 +19,35 @@ const clientView = document.getElementById('client-view');
 
 let currentActiveRole = 'client'; // To know which orders to render in Rides Tab
 
-// Telegram Identification — priority: URL param > initDataUnsafe > test
+// Telegram Identification — priority: signed Telegram user > URL fallback > test
 const urlSearchParams = new URLSearchParams(window.location.search);
 const uidFromUrl = urlSearchParams.get('uid');
-const telegramId = uidFromUrl
-    ? parseInt(uidFromUrl)
-    : ((tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 123456789);
-const firstName = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : (uidFromUrl ? 'Пользователь' : 'Тест');
+const telegramUser = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : null;
+const telegramId = telegramUser ? telegramUser.id : (uidFromUrl ? parseInt(uidFromUrl) : 123456789);
+const firstName = telegramUser ? telegramUser.first_name : (uidFromUrl ? 'Пользователь' : 'Тест');
+const API_BASE = window.location.origin.includes('github.io')
+    ? 'https://swimsuit-sheath-viewless.ngrok-free.dev'
+    : window.location.origin;
+const telegramInitData = tg.initData || '';
+
+function apiHeaders(extraHeaders = {}) {
+    return {
+        ...extraHeaders,
+        'ngrok-skip-browser-warning': 'true',
+        'X-Telegram-Init-Data': telegramInitData
+    };
+}
+
+function apiFetch(path, options = {}) {
+    return fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: apiHeaders(options.headers || {})
+    });
+}
+
+function jsString(value) {
+    return JSON.stringify(String(value ?? ''));
+}
 
 userNameEl.textContent = firstName;
 const bgColor = tg.themeParams.button_color ? tg.themeParams.button_color.replace('#', '') : 'f4c01e';
@@ -56,13 +78,9 @@ navItems.forEach(item => {
 // Fetch Data
 async function initApp() {
     try {
-        const urlParams = window.location.search;
-        const response = await fetch(`https://swimsuit-sheath-viewless.ngrok-free.dev/api/user/${telegramId}${urlParams}`, {
-            headers: {
-                'ngrok-skip-browser-warning': 'true'
-            }
-        });
+        const response = await apiFetch(`/api/user/${telegramId}`);
         const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'API request failed');
 
         loader.classList.add('hidden');
         mainHeader.classList.remove('hidden');
@@ -212,7 +230,7 @@ function renderOrders(orders, containerId) {
                 ${o.meet_sign ? `<p style="margin-bottom:3px; color:var(--hint-color); font-size:12px;">🪧 Табличка: <b>${o.meet_sign}</b></p>` : ''}
                 
                 ${o.driver_id ? `<p style="margin-bottom:3px; color:var(--accent-color);">🚕 Водитель: ${driverDisplay}</p>` : ''}
-                ${currentActiveRole === 'client' ? `<button class="repeat-order-btn" onclick="repeatOrder(${o.id}, '${o.from_address}', '${o.to_address}')">Повторить</button>` : ''}
+                ${currentActiveRole === 'client' ? `<button class="repeat-order-btn" onclick="repeatOrder(${o.id}, ${jsString(o.from_address)}, ${jsString(o.to_address)})">Повторить</button>` : ''}
                 
                 <!-- Driver Status Buttons -->
                 ${currentActiveRole === 'driver' && o.status !== 'completed' && o.status !== 'cancelled' ? `
@@ -227,7 +245,7 @@ function renderOrders(orders, containerId) {
                 ` : ''}
 
                 <!-- Dispatcher Call/Assign/Cancel Buttons -->
-                ${currentActiveRole === 'dispatcher' ? `<button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(${o.id}, ${o.price || 'null'}, '${o.date || ''}', '${o.time || ''}')">✏️ Ред.</button>` : ''}
+                ${currentActiveRole === 'dispatcher' ? `<button class="primary-btn alt-btn" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #FFC107; color:#FFC107;" onclick="openEditModal(${o.id}, ${o.price || 'null'}, ${jsString(o.date)}, ${jsString(o.time)})">✏️ Ред.</button>` : ''}
                 ${currentActiveRole === 'dispatcher' && o.driver_id ? `<button class="primary-btn alt-btn" style="margin-top:10px; margin-left:5px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid #2196F3; color:#2196F3;" onclick="openChatModal(${o.id})">💬 Чат</button>` : ''}
                 ${currentActiveRole === 'dispatcher' && o.phone ? `<a href="tel:${o.phone}" class="primary-btn alt-btn" style="display:inline-block; text-decoration:none; margin-top:10px; padding:6px 12px; font-size:12px; width:auto; border: 1px solid var(--accent-color); color:var(--accent-color);">📞 Позв. клиенту</a>` : ''}
                 ${currentActiveRole === 'dispatcher' && (o.status === 'new' || o.status === 'pending_client') ? `<button class="primary-btn pulse-btn" style="margin-top:10px; padding:8px 12px; font-size:12px; width:auto;" onclick="openAssignModal(${o.id})">Назначить водителя</button>` : ''}
@@ -242,12 +260,10 @@ function renderOrders(orders, containerId) {
 async function updateOrderStatus(orderId, newStatus) {
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     try {
-        const urlParams = window.location.search;
-        const resp = await fetch(`https://swimsuit-sheath-viewless.ngrok-free.dev/api/order/${orderId}/status`, {
+        const resp = await apiFetch(`/api/order/${orderId}/status`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ caller_id: telegramId, status: newStatus })
         });
@@ -307,18 +323,17 @@ function openAssignModal(orderId) {
             const driverName = d.driver_name || d.first_name || 'Водитель';
             const carInfo = d.car_brand ? `${d.car_brand} • <b>${d.car_number || ''}</b>` : 'Нет авто';
             html += `
-        < div class= "driver-list-item" onclick = "selectDriverForAssign(this, ${d.telegram_id})" id = "drv-item-${d.telegram_id}" >
-        <div>
-            <h4 style="font-size:13px; margin-bottom:2px;">${driverName}</h4>
-            <p style="font-size:11px; color:var(--hint-color);">${carInfo}</p>
-        </div>
-                </div >
+                <div class="driver-list-item" onclick="selectDriverForAssign(this, ${d.telegram_id})" id="drv-item-${d.telegram_id}">
+                    <div>
+                        <h4 style="font-size:13px; margin-bottom:2px;">${driverName}</h4>
+                        <p style="font-size:11px; color:var(--hint-color);">${carInfo}</p>
+                    </div>
+                </div>
             `;
         });
         container.innerHTML = html;
     }
 
-    document.getElementById('assign-driver-modal').classList.remove('hidden');
     document.getElementById('assign-driver-modal').classList.remove('hidden');
     document.getElementById('confirm-assign-btn').disabled = true;
 }
@@ -328,10 +343,9 @@ function cancelOrder(orderId) {
         if (confirmed) {
             try {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-                const baseUrl = window.location.origin.includes('github.io') ? 'https://swimsuit-sheath-viewless.ngrok-free.dev' : window.location.origin;
-                const response = await fetch(baseUrl + "/api/transfer/" + orderId + "/cancel", {
+                const response = await apiFetch("/api/transfer/" + orderId + "/cancel", {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ caller_id: telegramId })
                 });
                 const res = await response.json();
@@ -363,18 +377,34 @@ function closeAssignModal() {
     selectedDriverId = null;
 }
 
-function confirmAssignDriver() {
+async function confirmAssignDriver() {
     if (!selectedDriverId || !activeAssignOrderId) return;
     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-    closeAssignModal();
-    tg.sendData(JSON.stringify({
-        action: 'assign_driver',
-        order_id: activeAssignOrderId,
-        driver_id: selectedDriverId
-    }));
-    tg.showAlert('Водитель успешно назначен на рейс!');
+    try {
+        const response = await apiFetch('/api/order/assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                caller_id: telegramId,
+                order_id: activeAssignOrderId,
+                driver_id: selectedDriverId
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            closeAssignModal();
+            tg.showAlert('Водитель успешно назначен на рейс!');
+            initApp();
+        } else {
+            tg.showAlert('Ошибка: ' + (result.error || 'Не удалось назначить водителя'));
+        }
+    } catch (e) {
+        tg.showAlert('Ошибка сети при назначении водителя');
+    }
 }
+
+document.getElementById('confirm-assign-btn')?.addEventListener('click', confirmAssignDriver);
 
 function setupDriverWithdraw() {
     const input = document.getElementById('withdraw-amount');
@@ -511,9 +541,9 @@ if (clientPickup) {
         clientOrderBtn.disabled = true;
 
         try {
-            const res = await fetch("https://swimsuit-sheath-viewless.ngrok-free.dev/api/order/create", {
+            const res = await apiFetch("/api/order/create", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     telegram_id: telegramId,
                     name: firstName,
@@ -571,9 +601,9 @@ if (syncBtnCheck) {
             setTimeout(async () => {
 
                 try {
-                    const res = await fetch("https://swimsuit-sheath-viewless.ngrok-free.dev/api/yandex/sync", {
+                    const res = await apiFetch("/api/yandex/sync", {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ telegram_id: telegramId, phone: syncPhone.value.trim() })
                     });
                     const data = await res.json();
@@ -666,11 +696,10 @@ function renderAdminDrivers() {
 async function toggleDriverAccess(driverId) {
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     try {
-        const response = await fetch("https://swimsuit-sheath-viewless.ngrok-free.dev/api/driver/" + driverId + "/toggle", {
+        const response = await apiFetch("/api/driver/" + driverId + "/toggle", {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ caller_id: telegramId })
         });
@@ -709,10 +738,7 @@ async function openManageDriverModal(driverId) {
 
     // Fetch current balance from API
     try {
-        const BASE = 'https://swimsuit-sheath-viewless.ngrok-free.dev';
-        const resp = await fetch(`${BASE} /api/driver / ${driverId}/balance`, {
-            headers: { 'ngrok-skip-browser-warning': 'true' }
-        });
+        const resp = await apiFetch(`/api/driver/${driverId}/balance`);
         if (resp.ok) {
             const data = await resp.json();
             const bal = data.balance ?? 0;
@@ -758,12 +784,10 @@ async function submitDriverBalance() {
         btn.textContent = 'Отправка...';
 
         try {
-            const BASE = 'https://swimsuit-sheath-viewless.ngrok-free.dev';
-            const resp = await fetch(`${BASE}/api/driver/${activeManageDriverId}/balance`, {
+            const resp = await apiFetch(`/api/driver/${activeManageDriverId}/balance`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     caller_id: telegramId,
@@ -934,12 +958,22 @@ document.getElementById('confirm-edit-btn').addEventListener('click', async () =
     const price = document.getElementById('edit-order-price').value;
     const date = document.getElementById('edit-order-date').value;
     const time = document.getElementById('edit-order-time').value;
-    await fetch('/api/order/' + currentEditOrderId, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ caller_id: window.tgData.user.id, price: price ? parseInt(price) : null, date: date || null, time: time || null })
-    });
-    document.getElementById('edit-order-modal').classList.add('hidden');
-    loadOrders();
+    try {
+        const response = await apiFetch('/api/order/' + currentEditOrderId, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caller_id: telegramId, price: price ? parseInt(price) : null, date: date || null, time: time || null })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            tg.showAlert('Ошибка: не удалось сохранить заказ');
+            return;
+        }
+        document.getElementById('edit-order-modal').classList.add('hidden');
+        initApp();
+    } catch (e) {
+        tg.showAlert('Ошибка сети при сохранении заказа');
+    }
 });
 
 let currentChatOrderId = null;
@@ -952,22 +986,109 @@ document.getElementById('send-chat-btn')?.addEventListener('click', async () => 
     const msg = document.getElementById('chat-message-input').value;
     if (!msg) return;
     try {
-        await fetch('/api/order/' + currentChatOrderId + '/message_driver', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ caller_id: window.tgData.user.id, message: msg })
+        const response = await apiFetch('/api/order/' + currentChatOrderId + '/message_driver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caller_id: telegramId, message: msg })
         });
-        tg.showAlert('Сообщение отправлено водителю!');
-    } catch (e) { }
+        const result = await response.json();
+        if (response.ok && result.success) {
+            tg.showAlert('Сообщение отправлено водителю!');
+        } else {
+            tg.showAlert('Ошибка: сообщение не отправлено');
+        }
+    } catch (e) {
+        tg.showAlert('Ошибка сети при отправке сообщения');
+    }
     document.getElementById('chat-driver-modal').classList.add('hidden');
 });
 
 async function loadAdminStats() {
     try {
-        const res = await fetch('/api/admin/stats?caller_id=' + window.tgData.user.id);
+        const res = await apiFetch('/api/admin/stats');
         const data = await res.json();
         document.getElementById('dash-rev').textContent = (data.revenue || 0).toLocaleString('ru-RU') + ' ₸';
         document.getElementById('dash-comp').textContent = data.total_completed;
         document.getElementById('dash-total-ord').textContent = data.total_orders;
         document.getElementById('dash-drv-on').textContent = data.drivers_online + ' / ' + data.total_drivers;
     } catch (e) { }
+}
+\n
+// Registration requests
+async function loadDriverRequests() {
+    try {
+        const res = await fetch('/api/driver_requests?caller_id=' + window.tgData.user.id);
+        const data = await res.json();
+        const container = document.getElementById('driver-requests-list');
+        if (!data.requests || data.requests.length === 0) {
+            container.innerHTML = '<div class="empty-state">Нет новых заявок</div>';
+            return;
+        }
+        
+        container.innerHTML = data.requests.map(r => 
+            <div class="order-card dispatcher-card">
+                <div class="order-header">
+                    <span class="order-id">Заявка #</span>
+                    <span class="order-status new">Ожидает</span>
+                </div>
+                <div class="order-details">
+                    <p><strong>Водитель:</strong> </p>
+                    <p><strong>Телефон:</strong> </p>
+                    <p><strong>Адрес:</strong> </p>
+                    <p><strong>Стаж:</strong> </p>
+                    <p><strong>Пригласил:</strong> </p>
+                    
+                    <div style="display:flex; gap:10px; margin-top:10px; overflow-x: auto;">
+                        <img src="/api/image/" style="height:60px; border-radius:4px; cursor:pointer;" onclick="openDocModal('/api/image/')">
+                        <img src="/api/image/" style="height:60px; border-radius:4px; cursor:pointer;" onclick="openDocModal('/api/image/')">
+                        <img src="/api/image/" style="height:60px; border-radius:4px; cursor:pointer;" onclick="openDocModal('/api/image/')">
+                    </div>
+                </div>
+                
+                <div class="order-actions">
+                    <button class="primary-btn" onclick="reviewRequest(, 'approve')">✅ Одобрить</button>
+                    <button class="primary-btn alt-btn" style="border: 1px solid #ff5252; color:#ff5252;" onclick="reviewRequest(, 'reject')">❌ Отклонить</button>
+                </div>
+            </div>
+        ).join('');
+    } catch (e) {
+        console.error(e);
+        document.getElementById('driver-requests-list').innerHTML = '<div class="error-msg">Ошибка загрузки заявок</div>';
+    }
+}
+
+function openDocModal(src) {
+    document.getElementById('doc-modal-img').src = src;
+    document.getElementById('docModal').style.display = 'flex';
+}
+
+function closeDocModal() {
+    document.getElementById('docModal').style.display = 'none';
+    document.getElementById('doc-modal-img').src = '';
+}
+
+async function reviewRequest(id, action) {
+    let reason = '';
+    if (action === 'reject') {
+        reason = prompt("Укажите причину отказа:");
+        if (reason === null) return; 
+    } else {
+        if (!confirm("Одобрить кандидата?")) return;
+    }
+    
+    try {
+        const res = await fetch(/api/driver_requests//action?caller_id= + window.tgData.user.id, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action, reason})
+        });
+        if (res.ok) {
+            tg.showAlert('Успешно выполнено');
+            loadDriverRequests();
+        } else {
+            console.error(await res.text());
+        }
+    } catch (e) {
+        console.error(e);
+    }
 }
